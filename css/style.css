@@ -1,0 +1,546 @@
+/* ========================================================= */
+/* FILE: style.css                                           */
+/* Toàn bộ định dạng giao diện của Vườn Ươm Hạnh Phúc 11B1   */
+/* ========================================================= */
+
+/* ---------- RESET & FONTS ---------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+body {
+    background: #f0f7ee;
+    color: #1e3a2f;
+    padding: 12px;
+    min-height: 100vh;
+    transition: background 0.2s;
+}
+a {
+    text-decoration: none;
+}
+button {
+    cursor: pointer;
+    border: none;
+    outline: none;
+    font-size: 0.9rem;
+    background: #2b7a4b;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+button:hover {
+    transform: scale(1.02);
+    background: #1f5f3a;
+}
+button:active {
+    transform: scale(0.96);
+}
+button.secondary {
+    background: #d9e6d3;
+    color: #1e3a2f;
+}
+button.secondary:hover {
+    background: #c0d4b7;
+}
+button.danger {
+    background: #b33c3c;
+}
+button.danger:hover {
+    background: #8f2e2e;
+}
+input,
+select,
+textarea {
+    font-size: 0.95rem;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #bdd6b3;
+    background: white;
+    width: 100%;
+    max-width: 100%;
+}
+textarea {
+    resize: vertical;
+}
+select {
+    appearance: auto;
+}
+
+/* ---------- HEADER ---------- */
+.header {
+    background: linear-gradient(145deg, #1e5a3a, #2b7a4b);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 6px 16px rgba(0, 40, 20, 0.2);
+    margin-bottom: 16px;
+}
+.header h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+.header .sub {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+.header .info-right {
+    text-align: right;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* ---------- STATS BAR ---------- */
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    background: white;
+    padding: 12px 18px;
+    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid #dce8d6;
+}
+.stats .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f5faf3;
+    padding: 4px 14px 4px 10px;
+    border-radius: 30px;
+}
+.stats .stat-item .label {
+    opacity: 0.7;
+    font-weight: 400;
+}
+.stats .stat-item .value {
+    font-weight: 700;
+    color: #1e5a3a;
+}
+
+/* ---------- TABS ---------- */
+.tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    background: white;
+    padding: 6px 12px;
+    border-radius: 40px;
+    border: 1px solid #dce8d6;
+}
+.tabs button {
+    background: transparent;
+    color: #1e3a2f;
+    padding: 6px 18px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+.tabs button:hover {
+    background: #e2efe0;
+    transform: none;
+}
+.tabs button.active {
+    background: #2b7a4b;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+.tab-content.active {
+    display: block;
+}
+@keyframes fadeIn {
+    0% { opacity: 0.3; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- GARDEN (student cards) ---------- */
+.garden-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 16px;
+    align-items: center;
+    background: white;
+    padding: 10px 16px;
+    border-radius: 24px;
+    border: 1px solid #dce8d6;
+}
+.garden-controls .search-box {
+    flex: 2 1 180px;
+    min-width: 140px;
+}
+.garden-controls select,
+.garden-controls input {
+    width: auto;
+    flex: 1 1 100px;
+}
+.garden-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 6px;
+}
+.student-card {
+    background: white;
+    border-radius: 24px;
+    padding: 14px 12px 12px;
+    box-shadow: 0 4px 12px rgba(0, 30, 10, 0.08);
+    border: 1px solid #dce8d6;
+    text-align: center;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+.student-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 50, 20, 0.12);
+}
+.student-card .tree-icon {
+    font-size: 2.6rem;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+.student-card .name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin: 4px 0 2px;
+    word-break: break-word;
+}
+.student-card .team-tag {
+    font-size: 0.7rem;
+    background: #e2efe0;
+    padding: 2px 10px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-bottom: 4px;
+    color: #1e5a3a;
+    font-weight: 600;
+}
+.student-card .points {
+    font-weight: 700;
+    color: #1e5a3a;
+    font-size: 1.1rem;
+}
+.student-card .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    margin: 4px 0 8px;
+    font-size: 1.2rem;
+}
+.student-card .actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+}
+.student-card .actions button {
+    font-size: 0.7rem;
+    padding: 4px 12px;
+    border-radius: 30px;
+}
+.student-card .level-label {
+    font-size: 0.7rem;
+    background: #f5faf3;
+    padding: 2px 10px;
+    border-radius: 30px;
+    margin-top: 2px;
+    color: #2b7a4b;
+}
+.empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: #6f8f7a;
+    font-size: 1.1rem;
+}
+
+/* ---------- MODAL ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 20, 10, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+}
+.modal-overlay.show {
+    display: flex;
+}
+.modal-box {
+    background: white;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 32px;
+    padding: 24px 28px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    overflow-y: auto;
+    animation: fadeIn 0.25s;
+    position: relative;
+}
+.modal-box h2 {
+    font-size: 1.4rem;
+    color: #1e5a3a;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.modal-box .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: #eef3ec;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: #1e3a2f;
+}
+.modal-box .close-btn:hover {
+    background: #d9e6d3;
+}
+.modal-box .field {
+    margin-bottom: 14px;
+}
+.modal-box .field label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    color: #1e3a2f;
+}
+.modal-box .field .helper {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 2px;
+}
+.modal-box .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+.modal-box .btn-row button {
+    min-width: 80px;
+}
+.modal-box .rule-group {
+    margin: 8px 0 4px;
+}
+.modal-box .rule-group .rule-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #eef3ec;
+    font-size: 0.9rem;
+}
+.rule-item .pts {
+    font-weight: 700;
+}
+.rule-item .pts.positive {
+    color: #1e7a4b;
+}
+.rule-item .pts.negative {
+    color: #b33c3c;
+}
+
+/* ---------- RANKING TABLES ---------- */
+.ranking-section {
+    background: white;
+    border-radius: 24px;
+    padding: 16px 18px;
+    border: 1px solid #dce8d6;
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+.ranking-section h3 {
+    margin-bottom: 10px;
+    color: #1e5a3a;
+    font-size: 1.2rem;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+th {
+    text-align: left;
+    background: #eef3ec;
+    padding: 8px 10px;
+    border-radius: 12px 12px 0 0;
+    color: #1e3a2f;
+    font-weight: 600;
+}
+td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eef3ec;
+}
+tr:last-child td {
+    border-bottom: none;
+}
+.rank-badge {
+    display: inline-block;
+    background: #d9e6d3;
+    border-radius: 30px;
+    padding: 0 10px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #1e5a3a;
+}
+.rank-1 {
+    background: #f5d742;
+    color: #1e3a2f;
+}
+.rank-2 {
+    background: #d0d9d0;
+}
+.rank-3 {
+    background: #d9b382;
+}
+
+/* ---------- LOG ---------- */
+.log-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    background: white;
+    padding: 12px 14px;
+    border-radius: 24px;
+    border: 1px solid #dce8d6;
+    align-items: center;
+}
+.log-filters select,
+.log-filters input {
+    width: auto;
+    flex: 1 1 120px;
+}
+.log-list {
+    background: white;
+    border-radius: 24px;
+    padding: 12px 14px;
+    border: 1px solid #dce8d6;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.log-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eef3ec;
+    font-size: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+.log-item .log-time {
+    font-weight: 300;
+    color: #4a6b55;
+    font-size: 0.8rem;
+    min-width: 120px;
+}
+.log-item .log-desc {
+    flex: 1;
+}
+.log-item .log-points {
+    font-weight: 700;
+}
+.log-item .log-points.positive {
+    color: #1e7a4b;
+}
+.log-item .log-points.negative {
+    color: #b33c3c;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 640px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .header .info-right {
+        text-align: center;
+        margin-top: 6px;
+    }
+    .garden-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    .stats {
+        font-size: 0.8rem;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+    .stats .stat-item {
+        padding: 2px 10px;
+    }
+    .modal-box {
+        padding: 18px 16px;
+        margin: 10px;
+    }
+    .tabs button {
+        font-size: 0.8rem;
+        padding: 4px 14px;
+    }
+}
+@media (max-width: 430px) {
+    .garden-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+    .student-card .tree-icon {
+        font-size: 2rem;
+    }
+    .student-card .name {
+        font-size: 0.85rem;
+    }
+}
+@media (min-width: 1024px) {
+    .garden-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #eef3ec;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #aec2a6;
+    border-radius: 10px;
+}
