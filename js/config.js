@@ -1,64 +1,69 @@
-const classInfo = {
-    name: "VƯỜN ƯƠM HẠNH PHÚC",
-    className: "11B1",
-    teacher: "Trần Thị Nguyệt",
-    school: "THCS&THPT Hiển Nhân",
-    academicYear: "2026–2027",
-    startDateWeek1: new Date("2026-08-10T00:00:00"),
-    totalGroups: 4
+// ============================================================
+// FILE: config.js
+// Chứa tất cả cấu hình: thông tin lớp, cấp độ, huy hiệu, quy định, học kì, danh sách mặc định
+// ============================================================
+
+const CONFIG = {
+    classInfo: {
+        name: '11B1',
+        teacher: 'Trần Thị Nguyệt',
+        school: 'THCS&THPT Hiển Nhân',
+        year: '2026–2027',
+        startDate: '2026-08-10', // Ngày bắt đầu Tuần 1 (định dạng YYYY-MM-DD)
+        numTeams: 4,
+    },
+    // Các mốc cấp độ (tăng dần theo điểm)
+    levels: [
+        { minPoints: 0, label: 'Hạt giống', icon: '🌱', color: '#a3c9a0' },
+        { minPoints: 20, label: 'Mầm non', icon: '🌿', color: '#7cb57a' },
+        { minPoints: 50, label: 'Cây xanh', icon: '🌳', color: '#4d8f4a' },
+        { minPoints: 100, label: 'Cây lớn', icon: '🌲', color: '#2d6b2a' },
+        { minPoints: 200, label: 'Vườn hoa', icon: '🌸', color: '#b58a4a' },
+    ],
+    // Huy hiệu (điều kiện sử dụng biến `points`)
+    badges: [
+        { id: 'cham_chi', label: 'Chăm chỉ', icon: '⭐', condition: 'points >= 50' },
+        { id: 'tien_bo', label: 'Tiến bộ', icon: '📈', condition: 'points >= 30' },
+        { id: 'tich_cuc', label: 'Học tập tích cực', icon: '📚', condition: 'points >= 40' },
+        { id: 'guong_mau', label: 'Gương mẫu', icon: '🌟', condition: 'points >= 70' },
+        { id: 'ho_tro', label: 'Hỗ trợ tập thể', icon: '🤝', condition: 'points >= 25' },
+        { id: 'noi_bat', label: 'Thành viên nổi bật', icon: '🏅', condition: 'points >= 100' },
+        { id: 'sao_tuan', label: 'Ngôi sao của tuần', icon: '⭐', condition: 'points >= 60' },
+    ],
+    // Quy định cộng/trừ điểm
+    rules: {
+        positive: [
+            { id: 'p1', label: 'Phát biểu xây dựng bài', points: 2 },
+            { id: 'p2', label: 'Làm bài tập đầy đủ', points: 3 },
+            { id: 'p3', label: 'Giúp đỡ bạn bè', points: 2 },
+            { id: 'p4', label: 'Tham gia hoạt động tập thể', points: 3 },
+            { id: 'p5', label: 'Đạt điểm cao trong kiểm tra', points: 5 },
+            { id: 'p6', label: 'Tiến bộ rõ rệt', points: 4 },
+            { id: 'p7', label: 'Có sáng kiến hay', points: 5 },
+        ],
+        negative: [
+            { id: 'n1', label: 'Nói chuyện trong giờ', points: -2 },
+            { id: 'n2', label: 'Không làm bài tập về nhà', points: -3 },
+            { id: 'n3', label: 'Mất trật tự', points: -2 },
+            { id: 'n4', label: 'Không tham gia hoạt động', points: -3 },
+            { id: 'n5', label: 'Sai đồng phục / tác phong', points: -10 },
+            { id: 'n6', label: 'Không chuẩn bị bài', points: -3 },
+            { id: 'n7', label: 'Vi phạm nội quy', points: -5 },
+        ]
+    },
+    // Học kì (tuần bắt đầu và kết thúc)
+    semesters: [
+        { id: 1, name: 'Học kì I', weekStart: 1, weekEnd: 18 },
+        { id: 2, name: 'Học kì II', weekStart: 19, weekEnd: 35 },
+    ]
 };
 
-const levels = [
-    { minPts: -Infinity, maxPts: 0, title: "Hạt mầm", icon: "🌱" },
-    { minPts: 1, maxPts: 20, title: "Mầm nhỏ", icon: "🌿" },
-    { minPts: 21, maxPts: 50, title: "Cây con", icon: "🪴" },
-    { minPts: 51, maxPts: 100, title: "Cây phát triển", icon: "🌳" },
-    { minPts: 101, maxPts: Infinity, title: "Cây cổ thụ", icon: "🌲" }
-];
-
-const badges = [
-    { id: "cham-chi", name: "Chăm chỉ", icon: "⭐", condition: "Đạt từ 20 điểm trở lên" },
-    { id: "tien-bo", name: "Tiến bộ", icon: "📈", condition: "Có điểm tích cực trong tuần" },
-    { id: "guong-mau", name: "Gương mẫu", icon: "🎖️", condition: "Không vi phạm nội quy" }
-];
-
-const rules = [
-    { id: 1, name: "Phát biểu xây dựng bài", pts: 5, type: "plus" },
-    { id: 2, name: "Đi học đúng giờ và gọn gàng", pts: 5, type: "plus" },
-    { id: 3, name: "Có tiến bộ trong tiết học", pts: 5, type: "plus" },
-    { id: 4, name: "Chuẩn bị bài và đủ sách vở", pts: 5, type: "plus" },
-    { id: 5, name: "Giữ vệ sinh chổ ngồi và phòng học", pts: 5, type: "plus" },
-    { id: 6, name: "Hoàn thành bài tập về nhà", pts: 5, type: "plus" },
-    { id: 7, name: "Giúp đỡ bạn bè/ Việc làm tử tế", pts: 10, type: "plus" },
-    { id: 8, name: "Hoàn thành xuất sắc nhiệm vụ Tổ/Lớp", pts: 10, type: "plus" },
-    { id: 9, name: "Đạt điểm tốt (8-9điểm)", pts: 10, type: "plus" },
-    { id: 10, name: "Tích cực tham gia phong trào", pts: 10, type: "plus" },
-    { id: 11, name: "Đạt điểm 10 tuyệt đối", pts: 20, type: "plus" },
-    { id: 12, name: "Việc tốt tiêu biểu/ Dũng cảm", pts: 20, type: "plus" },
-    { id: 13, name: "Đạt giải cuộc thi các cấp", pts: 20, type: "plus" },
-    { id: 14, name: "Đi học muộn / Tập trung chậm", pts: -5, type: "minus" },
-    { id: 15, name: "Không làm bài tập / Thiếu chuẩn bị", pts: -5, type: "minus" },
-    { id: 16, name: "Mất trật tự trong giờ học", pts: -5, type: "minus" },
-    { id: 17, name: "Sai đồng phục / tác phong", pts: -10, type: "minus" },
-    { id: 18, name: "Bỏ trực nhật Lớp/Tổ", pts: -10, type: "minus" },
-    { id: 19, name: "Nhắc nhở nhiều lần vẫn tái phạm", pts: -10, type: "minus" },
-    { id: 20, name: "Vi phạm nội quy nghiêm trọng", pts: -20, type: "minus" }
-];
-
-const semesters = {
-    term1: { name: "Học kì I", startWeek: 1, endWeek: 18 },
-    term2: { name: "Học kì II", startWeek: 19, endWeek: 35 }
-};
-
+// Danh sách học sinh mặc định (có thể thay thế)
 const DEFAULT_STUDENTS = [
-    "Diệp Thế Gia Bảo", "Nguyễn Minh Bình", "Trần Thị Ngọc Diệp", "Nguyễn Phan Ngọc Hân",
-    "Lê Đức Hậu", "Đặng Công Quốc Huy", "Huỳnh Ngọc Hoàng Huy", "Phạm Gia Huy",
-    "Ngô Hoàng Gia Hưng", "Phạm Tuấn Hưng", "Lâm Trần Khang", "Nguyễn Vĩnh Khang",
-    "Nguyễn Thị Hồng My", "Hà Phước Nghĩa", "Dương Thị Thu Ngoan", "Lê Đặng Nhật",
-    "Lê Trần Uyên Nhi", "Nguyễn Thị Tuyết Nhi", "Vũ Quỳnh Như", "Thái Tiến Phú",
-    "Ngô Thanh Phước", "Kiều Nguyễn Lan Phương", "Phạm Thảo Phương", "Nguyễn Vũ Lộc Thành",
-    "Võ Hồ Minh Thư", "Lê Văn Toàn", "Nguyễn Thị Thu Trang", "Nguyễn Thị Phước Trâm",
-    "Trần Thị Thùy Trâm", "Nguyễn Ngọc Trâm", "Phạm Nguyễn Bảo Trân", "Nguyễn Thanh Trúc",
-    "Trần Thị Thanh Trúc", "Lê Văn Tú", "Lê Huỳnh Văn Tùng", "Phan Thành Vinh",
-    "Huỳnh Nữ Thu Yên", "Đặng Văn Hà"
+    'Nguyễn Văn An', 'Trần Thị Bình', 'Lê Minh Châu', 'Phạm Hoàng Duy', 'Ngô Thị Lan',
+    'Đào Văn Hải', 'Hoàng Minh Hiếu', 'Bùi Thị Hoa', 'Lý Quang Huy', 'Vũ Thị Hương',
+    'Dương Văn Khánh', 'Trương Ngọc Linh', 'Lý Minh Long', 'Phạm Thị Mai', 'Nguyễn Văn Nam',
+    'Trần Quốc Nhật', 'Lê Thanh Nga', 'Phan Văn Phú', 'Nguyễn Thị Quỳnh', 'Phạm Minh Sơn',
+    'Lê Thị Thảo', 'Nguyễn Văn Tiến', 'Trần Thị Trang', 'Phạm Quang Trung', 'Hoàng Thị Tuyết',
+    'Võ Văn Tài', 'Nguyễn Bảo Uyên', 'Phạm Thị Vân', 'Lý Gia Bảo', 'Trần Minh Đức'
 ];
