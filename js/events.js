@@ -429,31 +429,5 @@ document.querySelectorAll('#tabNav button').forEach(btn => {
     });
 });
 
-// Sự kiện cho sidebar navigation
-document.querySelectorAll('.sidebar-nav button').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        const tab = this.dataset.tab;
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-        // Gọi render tương ứng nếu cần
-        if (tab === 'garden') renderGarden();
-        if (tab === 'rankings') renderRankings();
-        if (tab === 'teamManage') renderTeamManage();
-        if (tab === 'log') { populateLogFilters(); renderLog({}); }
-        if (tab === 'summary') updateSavedSummaries();
-        if (tab === 'rules') renderRules();
-    });
-});
-
-// Đảm bảo khi load trang, tab garden active
-document.addEventListener('DOMContentLoaded', function() {
-    // Kích hoạt tab garden mặc định
-    document.querySelector('.sidebar-nav button[data-tab="garden"]')?.classList.add('active');
-    document.getElementById('tab-garden')?.classList.add('active');
-    renderGarden();
-});
-
 // ----- Xuất/nhập dữ liệu (gắn vào các nút ở footer, được tạo trong main.js) -----
 // Các hàm này sẽ được gọi từ main.js sau khi tạo footer
