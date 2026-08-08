@@ -1,181 +1,288 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-    <title>VƯỜN ƯƠM HẠNH PHÚC - 11B1</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Vườn Ươm Hạnh Phúc - Lớp 11B1</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="app">
     <!-- HEADER -->
-    <header class="header">
-        <div>
-            <h1>🌱 VƯỜN ƯƠM HẠNH PHÚC</h1>
-            <div class="sub">Lớp 11B1 · Trường THCS&amp;THPT Hiển Nhân</div>
-            <div class="sub">GVCN: Trần Thị Nguyệt · Năm học 2026–2027</div>
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <div class="brand">
+          <div class="logo">🌱</div>
+          <div class="titles">
+            <h1>VƯỜN ƯƠM HẠNH PHÚC</h1>
+            <p>Lớp 11B1 · Hành trình trưởng thành</p>
+          </div>
         </div>
-        <div class="info-right">
-            <div>Tuần hiện tại: <span id="currentWeekDisplay">--</span></div>
-            <div style="font-size:0.8rem; opacity:0.8;">Ngày bắt đầu: 10/08/2026</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn small outline" id="presentModeBtn">🎭 Chế độ trình chiếu</button>
+        <div class="year-pill">📅 Năm học 2026–2027</div>
+        <div class="teacher-box">
+          <div class="avatar" id="teacherAvatar">TN</div>
+          <div class="t-info">
+            <p>Trần Thị Nguyệt</p>
+            <p>Giáo viên chủ nhiệm</p>
+          </div>
         </div>
+      </div>
     </header>
 
     <!-- STATS BAR -->
-    <div class="stats" id="statsBar">
-        <div class="stat-item"><span class="label">👨‍🎓</span> <span class="value" id="totalStudents">0</span></div>
-        <div class="stat-item"><span class="label">🏫 Tổ</span> <span class="value" id="totalTeams">0</span></div>
-        <div class="stat-item"><span class="label">⭐ Tổng điểm</span> <span class="value" id="totalPoints">0</span></div>
-        <div class="stat-item"><span class="label">🌳 Cấp độ cao</span> <span class="value" id="highLevelCount">0</span></div>
-        <div class="stat-item"><span class="label">🥇 Dẫn đầu</span> <span class="value" id="topStudent">--</span></div>
-        <div class="stat-item"><span class="label">🏆 Tổ dẫn đầu</span> <span class="value" id="topTeam">--</span></div>
-    </div>
+    <div class="stats-bar" id="statsBar"></div>
 
-    <!-- TABS -->
-    <nav class="tabs" id="tabNav">
-        <button class="active" data-tab="garden">🌿 Vườn</button>
-        <button data-tab="rankings">🏅 Xếp hạng</button>
-        <button data-tab="log">📋 Nhật ký</button>
-        <button data-tab="summary">📊 Tổng kết</button>
-        <button data-tab="teamManage">👥 Quản lý tổ</button>
-        <button data-tab="rules">📜 Quy định</button>
-    </nav>
+    <!-- BODY -->
+    <div class="body-wrap">
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+      <nav class="sidebar" id="sidebarNav">
+        <h3>KHÔNG GIAN LỚP HỌC</h3>
+        <button class="nav-item active" data-view="garden"><span class="ic">✦</span> Khu vườn</button>
+        <button class="nav-item" data-view="teams"><span class="ic">👤</span> Xếp học sinh vào tổ</button>
+        <button class="nav-item" data-view="ranking"><span class="ic">🏅</span> Xếp hạng</button>
+        <button class="nav-item" data-view="time"><span class="ic">📋</span> Thời gian &amp; tổng kết</button>
+        <button class="nav-item" data-view="log"><span class="ic">↺</span> Nhật ký</button>
+        <button class="nav-item" data-view="rules"><span class="ic">✓</span> Quy định điểm</button>
+        <button class="nav-item" data-view="data"><span class="ic">💾</span> Dữ liệu &amp; sao lưu</button>
+        <div class="side-summary" id="sideSummary"></div>
+      </nav>
 
-    <!-- TAB: GARDEN -->
-    <div id="tab-garden" class="tab-content active">
-        <div class="garden-controls">
-            <div class="search-box">
-                <input type="text" id="searchStudent" placeholder="🔍 Tìm học sinh..." />
-            </div>
-            <select id="filterTeam"><option value="all">Tất cả tổ</option></select>
-            <select id="sortGarden">
-                <option value="name">Tên A–Z</option>
-                <option value="points-desc">Điểm cao → thấp</option>
-                <option value="points-asc">Điểm thấp → cao</option>
-                <option value="team">Tổ</option>
+      <main class="content">
+        <!-- VIEW GARDEN -->
+        <section class="view active" id="view-garden">
+          <div class="view-header">
+            <div><h2>Khu vườn lớp học</h2><div class="sub">Mỗi học sinh là một cây đang lớn lên từng ngày</div></div>
+          </div>
+          <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="🔍 Tìm học sinh theo tên...">
+            <select id="filterTeam"><option value="all">Tất cả các tổ</option></select>
+            <select id="sortSelect">
+              <option value="name">Sắp xếp theo tên</option>
+              <option value="points_desc">Điểm cao → thấp</option>
+              <option value="points_asc">Điểm thấp → cao</option>
+              <option value="team">Theo tổ</option>
             </select>
-            <button id="resetGardenFilters" class="secondary">🔄 Đặt lại</button>
-        </div>
-        <div class="garden-grid" id="gardenGrid"></div>
-    </div>
+          </div>
+          <div class="grid-students" id="gardenGrid"></div>
+        </section>
 
-    <!-- TAB: RANKINGS -->
-    <div id="tab-rankings" class="tab-content">
-        <div class="ranking-section">
-            <h3>🏅 Xếp hạng cá nhân</h3>
-            <div id="individualRankingTable"></div>
-        </div>
-        <div class="ranking-section">
-            <h3>🏆 Xếp hạng tổ</h3>
-            <div id="teamRankingTable"></div>
-        </div>
-    </div>
-
-    <!-- TAB: LOG -->
-    <div id="tab-log" class="tab-content">
-        <div class="log-filters">
-            <select id="logFilterStudent"><option value="all">Tất cả HS</option></select>
-            <select id="logFilterTeam"><option value="all">Tất cả tổ</option></select>
-            <select id="logFilterType"><option value="all">Mọi loại</option><option value="add">Cộng điểm</option><option value="subtract">Trừ điểm</option><option value="move">Chuyển tổ</option></select>
-            <input type="date" id="logDateFrom" />
-            <input type="date" id="logDateTo" />
-            <button id="applyLogFilters" class="secondary">Lọc</button>
-            <button id="undoLastEvent" class="secondary" style="background:#f0d0c0;">↩ Hoàn tác</button>
-        </div>
-        <div class="log-list" id="logList"></div>
-    </div>
-
-    <!-- TAB: SUMMARY -->
-    <div id="tab-summary" class="tab-content">
-        <div style="background:white; border-radius:24px; padding:16px; border:1px solid #dce8d6;">
-            <h3 style="color:#1e5a3a;">Tổng kết</h3>
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin:12px 0;">
-                <select id="summaryType"><option value="week">Tuần</option><option value="month">Tháng</option><option value="semester">Học kì</option></select>
-                <input type="number" id="summaryWeek" placeholder="Số tuần" value="1" style="width:100px;" />
-                <input type="month" id="summaryMonth" />
-                <select id="summarySemester"><option value="1">Học kì I</option><option value="2">Học kì II</option></select>
-                <button id="generateSummary">📊 Tạo tổng kết</button>
-                <button id="saveSummary" class="secondary">💾 Lưu</button>
-                <button id="printSummary" class="secondary">🖨 In</button>
-                <button id="deleteSummary" class="danger" style="background:#b33c3c;">🗑 Xóa</button>
+        <!-- VIEW TEAMS -->
+        <section class="view" id="view-teams">
+          <div class="view-header">
+            <div><h2>Xếp học sinh vào tổ</h2><div class="sub">Quản lí sĩ số và chuyển tổ cho học sinh</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn outline" id="undoTransferBtn">↺ Hoàn tác chuyển tổ</button>
+              <button class="btn primary" id="evenTeamsBtn">⚖️ Xếp đều vào tổ</button>
             </div>
-            <div id="summaryResult" style="margin-top:12px; background:#f5faf3; border-radius:16px; padding:14px; min-height:80px; white-space:pre-wrap; font-size:0.9rem;"></div>
-            <div style="margin-top:10px;"><strong>Các bản tổng kết đã lưu:</strong> <span id="savedSummariesList">(chưa có)</span></div>
-        </div>
-    </div>
+          </div>
+          <div class="team-grid" id="teamSummaryGrid"></div>
+          <div class="roster-table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Họ và tên</th><th>Tổ hiện tại</th><th>Điểm</th><th>Chuyển sang</th></tr></thead>
+              <tbody id="rosterBody"></tbody>
+            </table>
+          </div>
+        </section>
 
-    <!-- TAB: TEAM MANAGE -->
-    <div id="tab-teamManage" class="tab-content">
-        <div style="background:white; border-radius:24px; padding:16px; border:1px solid #dce8d6;">
-            <h3 style="color:#1e5a3a;">👥 Quản lý tổ</h3>
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin:10px 0;">
-                <button id="redistributeTeams">🔄 Xếp đều vào tổ</button>
-                <button id="undoTeamMove" class="secondary">↩ Hoàn tác chuyển tổ</button>
-                <span style="margin-left:auto; font-weight:500;">Sĩ số: <span id="teamSizes"></span></span>
-            </div>
-            <div id="teamManageList"></div>
-        </div>
-    </div>
+        <!-- VIEW RANKING -->
+        <section class="view" id="view-ranking">
+          <div class="view-header">
+            <div><h2>Bảng xếp hạng</h2><div class="sub">Cập nhật theo thời gian thực</div></div>
+          </div>
+          <div class="rank-tabs">
+            <button class="active" data-rank="personal">🏅 Xếp hạng cá nhân</button>
+            <button data-rank="team">🌳 Xếp hạng tổ</button>
+          </div>
+          <div class="roster-table-wrap"><table id="rankPersonalTable">
+            <thead><tr><th>Hạng</th><th>Họ và tên</th><th>Tổ</th><th>Tổng điểm</th><th>Cấp độ</th><th>Huy hiệu</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <div class="roster-table-wrap" style="display:none;margin-top:14px;" id="rankTeamWrap"><table>
+            <thead><tr><th>Hạng</th><th>Tổ</th><th>Sĩ số</th><th>Tổng điểm</th><th>Điểm TB</th><th>Thành viên nổi bật</th></tr></thead>
+            <tbody id="rankTeamBody"></tbody>
+          </table></div>
+        </section>
 
-    <!-- TAB: RULES -->
-    <div id="tab-rules" class="tab-content">
-        <div style="background:white; border-radius:24px; padding:16px; border:1px solid #dce8d6;">
-            <h3 style="color:#1e5a3a;">📜 Quy định cộng/trừ điểm</h3>
-            <div id="rulesDisplay"></div>
-        </div>
-    </div>
+        <!-- VIEW TIME -->
+        <section class="view" id="view-time">
+          <div class="view-header">
+            <div><h2>Thời gian &amp; tổng kết</h2><div class="sub" id="currentWeekLabel"></div></div>
+          </div>
+          <div class="time-tabs">
+            <button class="active" data-period="week">Theo tuần</button>
+            <button data-period="month">Theo tháng</button>
+            <button data-period="semester">Theo học kì</button>
+          </div>
+          <div class="week-box" id="periodSelectBox"></div>
+          <div class="week-box" id="periodStatsBox" style="display:none;">
+            <div class="mini-stats" id="periodMiniStats"></div>
+            <h4 style="margin:14px 0 6px;font-size:13px;color:var(--primary-dark);">Xếp hạng học sinh trong kỳ</h4>
+            <div class="roster-table-wrap"><table><thead><tr><th>Hạng</th><th>Họ tên</th><th>Tổ</th><th>Điểm ròng</th></tr></thead><tbody id="periodStudentRank"></tbody></table></div>
+            <h4 style="margin:14px 0 6px;font-size:13px;color:var(--primary-dark);">Xếp hạng tổ trong kỳ</h4>
+            <div class="roster-table-wrap"><table><thead><tr><th>Hạng</th><th>Tổ</th><th>Điểm ròng</th></tr></thead><tbody id="periodTeamRank"></tbody></table></div>
+            <label style="font-size:12px;color:var(--text-light);display:block;margin:14px 0 4px;">Nhận xét của giáo viên</label>
+            <textarea class="comment" id="periodComment" placeholder="Nhận xét chung của giáo viên chủ nhiệm về kỳ này..."></textarea>
+            <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
+              <button class="btn primary" id="saveSummaryBtn">💾 Lưu tổng kết</button>
+              <button class="btn outline" id="printPeriodBtn">🖨️ In / Xuất báo cáo</button>
+              <button class="btn outline" id="csvPeriodBtn">⬇️ Xuất CSV</button>
+            </div>
+          </div>
+          <h3 style="margin:20px 0 10px;font-size:15px;color:var(--primary-dark);">📁 Các bản tổng kết đã lưu</h3>
+          <div id="savedSummariesList"></div>
+        </section>
 
-    <!-- MODAL: GHI NHẬN ĐIỂM -->
-    <div class="modal-overlay" id="scoreModal">
-        <div class="modal-box">
-            <span class="close-btn" id="closeScoreModal">&times;</span>
-            <h2>📝 Ghi nhận điểm</h2>
-            <div class="field"><label>Học sinh</label> <span id="scoreStudentName" style="font-weight:700;"></span> (Tổ <span id="scoreStudentTeam"></span>)</div>
-            <div class="field"><label>Điểm hiện tại</label> <span id="scoreCurrentPoints">0</span></div>
-            <div class="field">
-                <label>Hành vi cộng điểm</label>
-                <select id="scoreAddRule"><option value="">-- Chọn --</option></select>
-            </div>
-            <div class="field">
-                <label>Hành vi trừ điểm</label>
-                <select id="scoreSubtractRule"><option value="">-- Chọn --</option></select>
-            </div>
-            <div class="field">
-                <label>Ghi chú</label>
-                <input type="text" id="scoreNote" placeholder="Nhập ghi chú (không bắt buộc)" />
-            </div>
-            <div class="btn-row">
-                <button id="scoreConfirm" style="background:#1e7a4b;">✔ Xác nhận</button>
-                <button id="scoreCancel" class="secondary">Hủy</button>
-            </div>
-        </div>
-    </div>
+        <!-- VIEW LOG -->
+        <section class="view" id="view-log">
+          <div class="view-header">
+            <div><h2>Nhật ký hoạt động</h2><div class="sub">Toàn bộ lịch sử cộng điểm, trừ điểm và chuyển tổ</div></div>
+            <button class="btn outline" id="undoLastLogBtn">↺ Hoàn tác gần nhất</button>
+          </div>
+          <div class="log-filters">
+            <select id="logFilterStudent"><option value="all">Tất cả học sinh</option></select>
+            <select id="logFilterTeam"><option value="all">Tất cả các tổ</option></select>
+            <select id="logFilterType">
+              <option value="all">Tất cả loại sự kiện</option>
+              <option value="plus">Cộng điểm</option>
+              <option value="minus">Trừ điểm</option>
+              <option value="transfer">Chuyển tổ</option>
+              <option value="summary">Tổng kết</option>
+            </select>
+            <input type="date" id="logFilterFrom">
+            <input type="date" id="logFilterTo">
+            <select id="logSortOrder"><option value="desc">Mới nhất trước</option><option value="asc">Cũ nhất trước</option></select>
+          </div>
+          <div class="log-list" id="logList"></div>
+        </section>
 
-    <!-- MODAL: XEM CHI TIẾT HS -->
-    <div class="modal-overlay" id="detailModal">
-        <div class="modal-box">
-            <span class="close-btn" id="closeDetailModal">&times;</span>
-            <h2 id="detailName">👤 Học sinh</h2>
-            <div id="detailContent"></div>
-        </div>
-    </div>
-
-    <!-- MODAL: CONFIRM -->
-    <div class="modal-overlay" id="confirmModal">
-        <div class="modal-box" style="max-width:400px;">
-            <h2>⚠ Xác nhận</h2>
-            <p id="confirmMessage" style="margin:10px 0;"></p>
-            <div class="btn-row">
-                <button id="confirmYes" style="background:#b33c3c;">Đồng ý</button>
-                <button id="confirmNo" class="secondary">Hủy</button>
+        <!-- VIEW RULES -->
+        <section class="view" id="view-rules">
+          <div class="view-header">
+            <div><h2>Quy định cộng, trừ điểm</h2><div class="sub">Áp dụng đồng nhất trong toàn bộ hệ thống</div></div>
+          </div>
+          <div class="rules-cols">
+            <div>
+              <div class="rule-group"><h4>🌱 Hành vi tích cực hằng ngày (+5)</h4><div id="rules-daily"></div></div>
+              <div class="rule-group"><h4>🏆 Thành tích nổi bật (+10)</h4><div id="rules-achieve"></div></div>
+              <div class="rule-group"><h4>🌟 Đặc biệt xuất sắc (+20)</h4><div id="rules-special"></div></div>
             </div>
-        </div>
-    </div>
+            <div>
+              <div class="rule-group"><h4>⚠️ Vi phạm nhẹ (-5)</h4><div id="rules-minor"></div></div>
+              <div class="rule-group"><h4>🚫 Vi phạm vừa (-10)</h4><div id="rules-medium"></div></div>
+              <div class="rule-group"><h4>⛔ Vi phạm nghiêm trọng (-20)</h4><div id="rules-serious"></div></div>
+            </div>
+          </div>
+          <div class="rule-group">
+            <h4>🎖️ Hệ thống huy hiệu</h4>
+            <div id="badgeConfigList"></div>
+          </div>
+        </section>
 
-    <!-- JavaScript -->
-    <script src="js/config.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/events.js"></script>
-    <script src="js/main.js"></script>
+        <!-- VIEW DATA -->
+        <section class="view" id="view-data">
+          <div class="view-header"><div><h2>Dữ liệu &amp; sao lưu</h2><div class="sub">Toàn bộ dữ liệu được lưu trên trình duyệt của bạn (localStorage)</div></div></div>
+          <div class="week-box">
+            <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">
+              ⚠️ Dữ liệu chỉ được lưu trên trình duyệt/máy tính này. Hãy sao lưu định kỳ ra file JSON để tránh mất dữ liệu.
+              Chức năng đặt lại / xoá dữ liệu yêu cầu gõ đúng cụm xác nhận — đây chỉ là lớp bảo vệ giao diện, không phải cơ chế bảo mật tuyệt đối.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn primary" id="backupBtn">⬇️ Sao lưu ra file JSON</button>
+              <label class="btn outline" style="cursor:pointer;">⬆️ Khôi phục từ JSON<input type="file" id="restoreInput" accept=".json" style="display:none;"></label>
+              <button class="btn outline" id="csvStudentsBtn">⬇️ Xuất danh sách CSV</button>
+              <button class="btn outline" id="csvLogsBtn">⬇️ Xuất nhật ký CSV</button>
+              <button class="btn outline" id="printAllBtn">🖨️ In trang hiện tại</button>
+              <button class="btn danger" id="resetDataBtn">🗑️ Đặt lại toàn bộ dữ liệu</button>
+            </div>
+          </div>
+          <div class="week-box">
+            <h4 style="font-size:13px;color:var(--primary-dark);margin-bottom:8px;">Thông tin phiên bản dữ liệu</h4>
+            <p style="font-size:12px;color:var(--text-light);" id="dataVersionInfo"></p>
+          </div>
+        </section>
+
+        <div class="footer-note">Vườn Ươm Hạnh Phúc · Lớp 11B1 · Trường THCS&THPT Hiển Nhân · GVCN: Trần Thị Nguyệt</div>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL GHI NHẬN ĐIỂM -->
+  <div class="modal-overlay" id="pointModal">
+    <div class="modal-box">
+      <span class="close-x" data-close="pointModal">✕</span>
+      <h3>Ghi nhận điểm</h3>
+      <div class="m-sub">Chọn một hành vi để cộng hoặc trừ điểm cho học sinh</div>
+      <div class="m-info-row">
+        <div><b id="pmName"></b><br><span id="pmTeam" style="font-size:11px;color:var(--text-light);"></span></div>
+        <div style="text-align:right;">Điểm hiện tại<br><b id="pmPoints" style="font-size:18px;color:var(--primary-dark);"></b></div>
+      </div>
+      <div class="rule-pick-group">
+        <h5>➕ HÀNH VI CỘNG ĐIỂM</h5>
+        <div id="pmPlusRules"></div>
+        <h5>➖ HÀNH VI TRỪ ĐIỂM</h5>
+        <div id="pmMinusRules"></div>
+      </div>
+      <label style="font-size:12px;color:var(--text-light);">Ghi chú (không bắt buộc)</label>
+      <textarea id="pmNote" placeholder="Ví dụ: phát biểu tốt trong tiết Toán..."></textarea>
+      <div class="modal-actions">
+        <button class="btn outline" data-close="pointModal">Hủy</button>
+        <button class="btn primary" id="pmConfirmBtn">✓ Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CHI TIẾT HỌC SINH -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+      <span class="close-x" data-close="detailModal">✕</span>
+      <h3 id="dtName"></h3>
+      <div class="m-sub" id="dtSub"></div>
+      <div class="m-info-row">
+        <div>Tổng điểm<br><b id="dtPoints" style="font-size:20px;color:var(--primary-dark);"></b></div>
+        <div style="text-align:right;">Cấp độ<br><b id="dtLevel"></b></div>
+      </div>
+      <div id="dtProgressWrap" style="margin-bottom:10px;">
+        <div class="progressline" style="height:8px;background:#e7f1ea;border-radius:6px;overflow:hidden;"><i id="dtProgressBar" style="display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffce6b);"></i></div>
+        <div style="font-size:11px;color:var(--text-light);margin-top:4px;" id="dtNextLevel"></div>
+      </div>
+      <h5 style="font-size:12px;color:var(--text-light);margin-bottom:6px;">🎖️ Huy hiệu đã đạt</h5>
+      <div class="detail-badges" id="dtBadges"></div>
+      <h5 style="font-size:12px;color:var(--text-light);margin:12px 0 6px;">📜 Lịch sử gần đây</h5>
+      <div id="dtLogHistory" style="max-height:220px;overflow-y:auto;"></div>
+      <div class="modal-actions">
+        <button class="btn outline" data-close="detailModal">Đóng</button>
+        <button class="btn primary" id="dtGhiNhanBtn">+ Ghi nhận điểm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM LẠI TỔNG KẾT -->
+  <div class="modal-overlay" id="summaryViewModal">
+    <div class="modal-box">
+      <span class="close-x" data-close="summaryViewModal">✕</span>
+      <h3 id="svTitle"></h3>
+      <div class="m-sub" id="svSub"></div>
+      <div class="mini-stats" id="svStats"></div>
+      <h5 style="font-size:12px;color:var(--text-light);margin:10px 0 6px;">Xếp hạng học sinh</h5>
+      <div id="svStudentRank" style="max-height:180px;overflow-y:auto;font-size:12px;"></div>
+      <h5 style="font-size:12px;color:var(--text-light);margin:10px 0 6px;">Xếp hạng tổ</h5>
+      <div id="svTeamRank" style="font-size:12px;"></div>
+      <h5 style="font-size:12px;color:var(--text-light);margin:10px 0 6px;">Nhận xét giáo viên</h5>
+      <p id="svComment" style="font-size:13px;background:var(--primary-light);padding:10px;border-radius:10px;"></p>
+      <div class="modal-actions"><button class="btn outline" data-close="summaryViewModal">Đóng</button></div>
+    </div>
+  </div>
+
+  <div id="toast-wrap"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

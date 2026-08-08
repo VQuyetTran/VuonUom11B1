@@ -1,433 +1,307 @@
-// ============================================================
-// FILE: events.js
-// Xử lý tất cả sự kiện: modal điểm, chi tiết, quản lý tổ, tổng kết, nhật ký, hoàn tác, tabs, ...
-// ============================================================
+// js/events.js
+// Các sự kiện và handlers (gắn vào các button, input, select...)
 
-// ----- Mở/đóng modal điểm -----
-let currentScoreStudentId = null;
+// =========================================================
+// Modal ghi nhận điểm
+// =========================================================
+let activeStudentId = null;
+let selectedRuleId = null;
 
-window.openScoreModal = function(studentId) {
-    const student = getStudentById(studentId);
-    if (!student) return;
-    currentScoreStudentId = studentId;
-    document.getElementById('scoreStudentName').textContent = student.name;
-    document.getElementById('scoreStudentTeam').textContent = appData.teamAssignments[studentId] || '?';
-    document.getElementById('scoreCurrentPoints').textContent = student.points;
-    // Populate rules
-    const addSel = document.getElementById('scoreAddRule');
-    addSel.innerHTML = '<option value="">-- Chọn --</option>';
-    CONFIG.rules.positive.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.label + ' (+' + r.points + ')';
-        opt.dataset.points = r.points;
-        addSel.appendChild(opt);
+function openPointModal(studentId) {
+  activeStudentId = studentId;
+  selectedRuleId = null;
+  const s = DB.students.find(x => x.id === studentId);
+  if (!s) return;
+  document.getElementById("pmName").textContent = s.name;
+  document.getElementById("pmTeam").textContent = "Tổ " + s.team;
+  document.getElementById("pmPoints").textContent = s.points + " điểm";
+  document.getElementById("pmNote").value = "";
+  const plus = POINT_RULES.filter(r => r.points > 0);
+  const minus = POINT_RULES.filter(r => r.points < 0);
+  document.getElementById("pmPlusRules").innerHTML = plus.map(r => ruleHtml(r)).join("");
+  document.getElementById("pmMinusRules").innerHTML = minus.map(r => ruleHtml(r)).join("");
+  document.querySelectorAll("#pmPlusRules .rule-pick, #pmMinusRules .rule-pick").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll("#pmPlusRules .rule-pick, #pmMinusRules .rule-pick").forEach(x => x.classList.remove("selected", "minus-sel"));
+      selectedRuleId = el.getAttribute("data-rid");
+      const r = ruleById(selectedRuleId);
+      el.classList.add("selected");
+      if (r.points < 0) el.classList.add("minus-sel");
     });
-    const subSel = document.getElementById('scoreSubtractRule');
-    subSel.innerHTML = '<option value="">-- Chọn --</option>';
-    CONFIG.rules.negative.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.label + ' (' + r.points + ')';
-        opt.dataset.points = r.points;
-        subSel.appendChild(opt);
-    });
-    document.getElementById('scoreNote').value = '';
-    document.getElementById('scoreModal').classList.add('show');
-};
-
-function closeScoreModal() {
-    document.getElementById('scoreModal').classList.remove('show');
-    currentScoreStudentId = null;
+  });
+  openModal("pointModal");
 }
 
-document.getElementById('closeScoreModal').addEventListener('click', closeScoreModal);
-document.getElementById('scoreCancel').addEventListener('click', closeScoreModal);
-
-document.getElementById('scoreConfirm').addEventListener('click', function() {
-    const studentId = currentScoreStudentId;
-    if (!studentId) return;
-    const student = getStudentById(studentId);
-    if (!student) return;
-    const addSel = document.getElementById('scoreAddRule');
-    const subSel = document.getElementById('scoreSubtractRule');
-    const addVal = addSel.value;
-    const subVal = subSel.value;
-    if (!addVal && !subVal) {
-        alert('Vui lòng chọn một hành vi cộng hoặc trừ điểm.');
-        return;
-    }
-    let points = 0;
-    let desc = '';
-    if (addVal) {
-        const rule = CONFIG.rules.positive.find(r => r.id === addVal);
-        if (rule) { points = rule.points;
-            desc = 'Cộng điểm: ' + rule.label; }
-    }
-    if (subVal) {
-        const rule = CONFIG.rules.negative.find(r => r.id === subVal);
-        if (rule) { points = rule.points;
-            desc = (desc ? desc + '; ' : '') + 'Trừ điểm: ' + rule.label; }
-    }
-    const note = document.getElementById('scoreNote').value.trim();
-    const event = {
-        id: generateId(),
-        studentId: student.id,
-        team: appData.teamAssignments[student.id] || 1,
-        type: points > 0 ? 'add' : 'subtract',
-        points: points,
-        description: desc,
-        note: note,
-        timestamp: new Date().toISOString(),
-        actor: 'GVCN',
-    };
-    appData.events.push(event);
-    student.points += points;
-    saveData();
-    closeScoreModal();
-    renderAll();
-    alert('✔ Đã ghi nhận ' + (points > 0 ? 'cộng' : 'trừ') + ' ' + Math.abs(points) + ' điểm cho ' + student.name);
-});
-
-// ----- Modal xem chi tiết -----
-window.openDetailModal = function(studentId) {
-    const student = getStudentById(studentId);
-    if (!student) return;
-    document.getElementById('detailName').textContent = '👤 ' + student.name;
-    const badges = getBadges(student);
-    const level = getLevel(student.points);
-    const team = appData.teamAssignments[student.id] || '?';
-    let html = `
-        <div><strong>Tổ:</strong> ${team}</div>
-        <div><strong>Điểm:</strong> ${student.points}</div>
-        <div><strong>Cấp độ:</strong> ${level.icon} ${level.label}</div>
-        <div><strong>Huy hiệu:</strong> ${badges.map(b => b.icon+' '+b.label).join(', ') || 'Chưa có'}</div>
-        <hr style="margin:12px 0;">
-        <div><strong>Lịch sử gần đây:</strong></div>
-        <div style="max-height:200px;overflow-y:auto;font-size:0.9rem;">
-    `;
-    const events = appData.events.filter(e => e.studentId === student.id).sort((a, b) => new Date(b.timestamp) - new Date(a
-        .timestamp));
-    if (!events.length) html += '<div>Chưa có hoạt động.</div>';
-    else {
-        events.slice(0, 20).forEach(e => {
-            html += `<div style="padding:4px 0;border-bottom:1px solid #eef3ec;">
-                ${formatDate(e.timestamp)}: ${e.description} (${e.points>0?'+':''}${e.points}) ${e.note ? '– '+e.note : ''}
-            </div>`;
-        });
-    }
-    html += '</div>';
-    document.getElementById('detailContent').innerHTML = html;
-    document.getElementById('detailModal').classList.add('show');
-};
-
-document.getElementById('closeDetailModal').addEventListener('click', function() {
-    document.getElementById('detailModal').classList.remove('show');
-});
-document.querySelectorAll('.modal-overlay').forEach(el => {
-    el.addEventListener('click', function(e) {
-        if (e.target === this) this.classList.remove('show');
-    });
-});
-
-// ----- Quản lý tổ -----
-window.moveStudentToTeam = function(studentId, newTeam) {
-    const student = getStudentById(studentId);
-    if (!student) return;
-    const oldTeam = appData.teamAssignments[studentId];
-    if (oldTeam == newTeam) return;
-    const event = {
-        id: generateId(),
-        studentId: student.id,
-        team: newTeam,
-        type: 'move',
-        points: 0,
-        description: `Chuyển từ Tổ ${oldTeam} sang Tổ ${newTeam}`,
-        note: '',
-        timestamp: new Date().toISOString(),
-        actor: 'GVCN',
-    };
-    appData.events.push(event);
-    appData.teamAssignments[studentId] = parseInt(newTeam);
-    appData.lastTeamMove = { studentId, oldTeam, newTeam };
-    saveData();
-    renderAll();
-};
-
-document.getElementById('redistributeTeams').addEventListener('click', function() {
-    const students = appData.students;
-    const numTeams = CONFIG.classInfo.numTeams;
-    const shuffled = [...students];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    shuffled.forEach((s, idx) => {
-        const team = (idx % numTeams) + 1;
-        const oldTeam = appData.teamAssignments[s.id];
-        if (oldTeam !== team) {
-            const event = {
-                id: generateId(),
-                studentId: s.id,
-                team: team,
-                type: 'move',
-                points: 0,
-                description: `Xếp đều: chuyển từ Tổ ${oldTeam||'?'} sang Tổ ${team}`,
-                note: '',
-                timestamp: new Date().toISOString(),
-                actor: 'GVCN',
-            };
-            appData.events.push(event);
-            appData.teamAssignments[s.id] = team;
-        }
-    });
-    appData.lastTeamMove = null;
-    saveData();
-    renderAll();
-    alert('Đã xếp đều học sinh vào các tổ.');
-});
-
-document.getElementById('undoTeamMove').addEventListener('click', function() {
-    if (!appData.lastTeamMove) {
-        alert('Không có thao tác chuyển tổ nào để hoàn tác.');
-        return;
-    }
-    const { studentId, oldTeam } = appData.lastTeamMove;
-    const student = getStudentById(studentId);
-    if (!student) { appData.lastTeamMove = null; return; }
-    const lastMoveEvent = appData.events.filter(e => e.studentId === studentId && e.type === 'move').pop();
-    if (lastMoveEvent) {
-        appData.events = appData.events.filter(e => e.id !== lastMoveEvent.id);
-    }
-    appData.teamAssignments[studentId] = oldTeam;
-    appData.lastTeamMove = null;
-    saveData();
-    renderAll();
-    alert('Đã hoàn tác chuyển tổ cho ' + student.name);
-});
-
-// ----- Lọc nhật ký -----
-document.getElementById('applyLogFilters').addEventListener('click', function() {
-    const student = document.getElementById('logFilterStudent').value;
-    const team = document.getElementById('logFilterTeam').value;
-    const type = document.getElementById('logFilterType').value;
-    const dateFrom = document.getElementById('logDateFrom').value;
-    const dateTo = document.getElementById('logDateTo').value;
-    renderLog({ student, team, type, dateFrom, dateTo });
-});
-
-// ----- Hoàn tác sự kiện cuối -----
-document.getElementById('undoLastEvent').addEventListener('click', function() {
-    if (!appData.events.length) {
-        alert('Không có sự kiện nào để hoàn tác.');
-        return;
-    }
-    const lastEvent = appData.events[appData.events.length - 1];
-    if (lastEvent.type === 'add' || lastEvent.type === 'subtract') {
-        const student = getStudentById(lastEvent.studentId);
-        if (student) {
-            student.points -= lastEvent.points;
-            appData.events.pop();
-            saveData();
-            renderAll();
-            alert('Đã hoàn tác sự kiện: ' + lastEvent.description);
-        } else {
-            appData.events.pop();
-            saveData();
-            renderAll();
-        }
-    } else if (lastEvent.type === 'move') {
-        const student = getStudentById(lastEvent.studentId);
-        if (student) {
-            const match = lastEvent.description.match(/Tổ (\d+) sang Tổ (\d+)/);
-            if (match) {
-                const oldTeam = parseInt(match[1]);
-                appData.teamAssignments[student.id] = oldTeam;
-                appData.events.pop();
-                saveData();
-                renderAll();
-                alert('Đã hoàn tác chuyển tổ cho ' + student.name);
-                return;
-            }
-        }
-        alert('Không thể hoàn tác sự kiện này.');
-    } else {
-        alert('Không thể hoàn tác loại sự kiện này.');
-    }
-});
-
-// ----- Tổng kết -----
-function getEventsInRange(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59);
-    return appData.events.filter(e => {
-        const d = new Date(e.timestamp);
-        return d >= start && d <= end;
-    });
+function ruleHtml(r) {
+  const cls = r.points > 0 ? "plus" : "minus";
+  return '<div class="rule-pick" data-rid="' + r.id + '"><span>' + r.label + '</span><span class="rule-pts ' + cls + '">' + (r.points > 0 ? "+" : "") + r.points + '</span></div>';
 }
 
-function generateSummaryText(type, period) {
-    let startDate, endDate;
-    let label = '';
-    if (type === 'week') {
-        const weekNum = parseInt(document.getElementById('summaryWeek').value) || 1;
-        const start = new Date(CONFIG.classInfo.startDate);
-        start.setDate(start.getDate() + (weekNum - 1) * 7);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 6);
-        startDate = start.toISOString().slice(0, 10);
-        endDate = end.toISOString().slice(0, 10);
-        label = 'Tuần ' + weekNum;
-    } else if (type === 'month') {
-        const monthVal = document.getElementById('summaryMonth').value;
-        if (!monthVal) { alert('Vui lòng chọn tháng.'); return null; }
-        const [year, month] = monthVal.split('-').map(Number);
-        startDate = new Date(year, month - 1, 1).toISOString().slice(0, 10);
-        endDate = new Date(year, month, 0).toISOString().slice(0, 10);
-        label = 'Tháng ' + month + '/' + year;
-    } else if (type === 'semester') {
-        const semId = parseInt(document.getElementById('summarySemester').value);
-        const sem = CONFIG.semesters.find(s => s.id === semId);
-        if (!sem) { alert('Học kì không hợp lệ.'); return null; }
-        const start = new Date(CONFIG.classInfo.startDate);
-        start.setDate(start.getDate() + (sem.weekStart - 1) * 7);
-        const end = new Date(CONFIG.classInfo.startDate);
-        end.setDate(end.getDate() + (sem.weekEnd - 1) * 7 + 6);
-        startDate = start.toISOString().slice(0, 10);
-        endDate = end.toISOString().slice(0, 10);
-        label = sem.name;
-    }
-    const events = getEventsInRange(startDate, endDate);
-    const totalAdd = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
-    const totalSub = events.filter(e => e.points < 0).reduce((s, e) => s + e.points, 0);
-    const net = totalAdd + totalSub;
-    const studentScores = {};
-    events.forEach(e => {
-        if (!studentScores[e.studentId]) studentScores[e.studentId] = 0;
-        studentScores[e.studentId] += e.points;
-    });
-    const sorted = Object.entries(studentScores).sort((a, b) => b[1] - a[1]);
-    const rankStr = sorted.map(([id, pts], idx) => {
-        const s = getStudentById(parseInt(id));
-        return `${idx+1}. ${s?s.name:'?'}: ${pts} điểm`;
-    }).join('\n');
-    const teamScores = {};
-    events.forEach(e => {
-        if (!teamScores[e.team]) teamScores[e.team] = 0;
-        teamScores[e.team] += e.points;
-    });
-    const teamRank = Object.entries(teamScores).sort((a, b) => b[1] - a[1])
-        .map(([t, pts]) => `Tổ ${t}: ${pts} điểm`).join('\n');
-    const result = `
-📊 TỔNG KẾT ${label.toUpperCase()}
-Khoảng thời gian: ${startDate} → ${endDate}
-Ngày lập: ${new Date().toLocaleDateString('vi-VN')}
-Người thực hiện: GVCN
-
-📌 Thống kê:
-- Tổng lượt ghi nhận: ${events.length}
-- Tổng điểm cộng: +${totalAdd}
-- Tổng điểm trừ: ${totalSub}
-- Điểm ròng: ${net}
-
-🏅 Xếp hạng cá nhân:
-${rankStr || 'Chưa có dữ liệu'}
-
-🏆 Xếp hạng tổ:
-${teamRank || 'Chưa có dữ liệu'}
-
-Nhận xét của giáo viên:
-___________________________________
-`;
-    return { text: result, startDate, endDate, label, events: events.length, totalAdd, totalSub, net };
+// =========================================================
+// Modal chi tiết học sinh
+// =========================================================
+function openDetailModal(studentId) {
+  const s = DB.students.find(x => x.id === studentId);
+  if (!s) return;
+  activeStudentId = studentId;
+  const lvl = getLevel(s.points);
+  const prog = levelProgress(s.points);
+  document.getElementById("dtName").textContent = s.name;
+  document.getElementById("dtSub").textContent = "Tổ " + s.team + " · " + lvl.icon + " " + lvl.name;
+  document.getElementById("dtPoints").textContent = s.points;
+  document.getElementById("dtLevel").textContent = lvl.icon + " " + lvl.name;
+  document.getElementById("dtProgressBar").style.width = prog.pct + "%";
+  document.getElementById("dtNextLevel").textContent = prog.nextName ? "Còn " + prog.remain + " điểm để đạt cấp '" + prog.nextName + "'" : "Đã đạt cấp độ cao nhất";
+  const badges = studentBadges(s);
+  document.getElementById("dtBadges").innerHTML = badges.length ? badges.map(b => '<div class="detail-badge">' + b.icon + ' ' + b.name + '</div>').join("") : '<span style="font-size:12px;color:var(--text-light);">Chưa đạt huy hiệu nào</span>';
+  const logs = DB.logs.filter(l => l.studentId === studentId).slice(0, 20);
+  document.getElementById("dtLogHistory").innerHTML = logs.length ? logs.map(l => {
+    const cls = l.points > 0 ? "plus" : l.points < 0 ? "minus" : "";
+    return '<div class="detail-log-item"><b style="color:var(--' + (l.points > 0 ? "plus" : l.points < 0 ? "minus" : "text") + ');">' + (l.points !== 0 ? (l.points > 0 ? "+" : "") + l.points : "•") + '</b> ' + l.content + ' <span style="color:var(--text-light);">— ' + l.time + '</span></div>';
+  }).join("") : '<span style="font-size:12px;color:var(--text-light);">Chưa có lịch sử.</span>';
+  openModal("detailModal");
 }
 
-document.getElementById('generateSummary').addEventListener('click', function() {
-    const type = document.getElementById('summaryType').value;
-    const result = generateSummaryText(type);
-    if (!result) return;
-    document.getElementById('summaryResult').textContent = result.text;
-    window._lastSummary = result;
-});
+// =========================================================
+// Xem / Xóa tổng kết
+// =========================================================
+function viewSummary(id) {
+  const s = DB.summaries.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById("svTitle").textContent = s.label;
+  document.getElementById("svSub").textContent = "Lập ngày " + s.createdAt + " bởi " + s.author;
+  document.getElementById("svStats").innerHTML =
+    miniStat(s.stats.totalLogs, "Lượt ghi nhận") + miniStat("+" + s.stats.totalPlus, "Điểm cộng") +
+    miniStat(s.stats.totalMinus, "Điểm trừ") + miniStat(s.stats.net, "Điểm ròng");
+  document.getElementById("svStudentRank").innerHTML = s.studentRank.slice(0, 15).map((x, i) =>
+    (i + 1) + ". " + x.name + " (Tổ " + x.team + ") — " + x.net + " điểm<br>").join("");
+  document.getElementById("svTeamRank").innerHTML = s.teamRank.map((x, i) =>
+    (i + 1) + ". Tổ " + x.team + " — " + x.net + " điểm<br>").join("");
+  document.getElementById("svComment").textContent = s.comment || "(Không có nhận xét)";
+  openModal("summaryViewModal");
+}
 
-document.getElementById('saveSummary').addEventListener('click', function() {
-    if (!window._lastSummary) {
-        alert('Hãy tạo tổng kết trước khi lưu.');
-        return;
-    }
+function deleteSummary(id) {
+  if (!confirm("Bạn có chắc muốn xóa bản tổng kết này? Thao tác không ảnh hưởng đến điểm và nhật ký.")) return;
+  DB.summaries = DB.summaries.filter(s => s.id !== id);
+  saveDB();
+  renderSavedSummaries();
+  toast("Đã xóa bản tổng kết.");
+}
+
+// =========================================================
+// Gắn sự kiện cho các nút, input, select...
+// =========================================================
+function initEvents() {
+  // --- Navigation & Sidebar ---
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const v = btn.getAttribute("data-view");
+      document.querySelectorAll(".view").forEach(sec => sec.classList.remove("active"));
+      document.getElementById("view-" + v).classList.add("active");
+      if (window.innerWidth <= 900) { closeSidebar(); }
+      if (v === "ranking") renderRanking();
+      if (v === "time") renderTimeView();
+      if (v === "log") renderLog();
+    });
+  });
+
+  document.getElementById("hamburgerBtn").addEventListener("click", openSidebar);
+  document.getElementById("sidebarOverlay").addEventListener("click", closeSidebar);
+
+  function openSidebar() {
+    document.getElementById("sidebarNav").classList.add("open");
+    document.getElementById("sidebarOverlay").classList.add("show");
+  }
+  function closeSidebar() {
+    document.getElementById("sidebarNav").classList.remove("open");
+    document.getElementById("sidebarOverlay").classList.remove("show");
+  }
+  // expose để dùng nếu cần
+  window.closeSidebar = closeSidebar;
+
+  // --- Present mode ---
+  document.getElementById("presentModeBtn").addEventListener("click", () => {
+    DB.presentMode = !DB.presentMode;
+    saveDB();
+    document.getElementById("presentModeBtn").textContent = DB.presentMode ? "🎭 Đang trình chiếu (bật)" : "🎭 Chế độ trình chiếu";
+    renderAll();
+  });
+
+  // --- Search / filter / sort ---
+  document.getElementById("searchInput").addEventListener("input", renderGarden);
+  document.getElementById("filterTeam").addEventListener("change", renderGarden);
+  document.getElementById("sortSelect").addEventListener("change", renderGarden);
+
+  // --- Log filters ---
+  ["logFilterStudent", "logFilterTeam", "logFilterType", "logFilterFrom", "logFilterTo", "logSortOrder"].forEach(id => {
+    document.getElementById(id).addEventListener("change", renderLog);
+  });
+
+  // --- Undo ---
+  document.getElementById("undoLastLogBtn").addEventListener("click", undoLast);
+  document.getElementById("undoTransferBtn").addEventListener("click", undoLast);
+
+  // --- Even teams ---
+  document.getElementById("evenTeamsBtn").addEventListener("click", () => {
+    if (!confirm("Xếp đều lại tất cả học sinh vào " + DB.numTeams + " tổ theo thứ tự danh sách?")) return;
+    evenlyDistributeTeams();
+  });
+
+  // --- Modal point confirm ---
+  document.getElementById("pmConfirmBtn").addEventListener("click", () => {
+    if (!activeStudentId) { toast("Vui lòng chọn học sinh."); return; }
+    if (!selectedRuleId) { toast("Vui lòng chọn một hành vi trước khi xác nhận."); return; }
+    const s = DB.students.find(x => x.id === activeStudentId);
+    const rule = ruleById(selectedRuleId);
+    const note = document.getElementById("pmNote").value.trim();
+    addPointLog(s, rule, note);
+    closeModal("pointModal");
+    toast("✓ Đã " + (rule.points > 0 ? "cộng " : "trừ ") + Math.abs(rule.points) + " điểm cho " + s.name, true);
+    renderAll();
+  });
+
+  // --- Detail modal: ghi nhận điểm ---
+  document.getElementById("dtGhiNhanBtn").addEventListener("click", () => {
+    closeModal("detailModal");
+    openPointModal(activeStudentId);
+  });
+
+  // --- Rank tabs ---
+  document.querySelectorAll(".rank-tabs button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".rank-tabs button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      currentRankTab = b.getAttribute("data-rank");
+      renderRanking();
+    });
+  });
+
+  // --- Time tabs ---
+  document.querySelectorAll(".time-tabs button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".time-tabs button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      currentPeriodType = b.getAttribute("data-period");
+      renderPeriodSelectBox();
+    });
+  });
+
+  // --- Save summary ---
+  document.getElementById("saveSummaryBtn").addEventListener("click", () => {
+    if (!currentPeriodData) { toast("Vui lòng chọn thời gian và xem thống kê trước."); return; }
+    const comment = document.getElementById("periodComment").value.trim();
     const summary = {
-        id: generateId(),
-        ...window._lastSummary,
-        savedAt: new Date().toISOString(),
+      id: uid(),
+      type: currentPeriodData.type,
+      label: currentPeriodData.label,
+      fromISO: currentPeriodData.fromISO,
+      toISO: currentPeriodData.toISO,
+      createdAt: nowDateTimeStr(),
+      author: DB.classInfo.teacher,
+      stats: { totalLogs: currentPeriodData.totalLogs, totalPlus: currentPeriodData.totalPlus, totalMinus: currentPeriodData.totalMinus, net: currentPeriodData.net },
+      studentRank: currentPeriodData.studentNet,
+      teamRank: currentPeriodData.teamNet,
+      comment: comment
     };
-    appData.summaries.push(summary);
-    saveData();
-    updateSavedSummaries();
-    alert('Đã lưu tổng kết.');
-});
+    DB.summaries.unshift(summary);
+    const log = {
+      id: uid(),
+      studentId: "",
+      studentName: "",
+      team: 0,
+      type: "summary",
+      content: "Lập bản tổng kết: " + summary.label,
+      points: 0,
+      note: comment,
+      dateISO: todayISO(),
+      time: nowDateTimeStr(),
+      actor: DB.classInfo.teacher
+    };
+    DB.logs.unshift(log);
+    saveDB();
+    toast("Đã lưu bản tổng kết.");
+    renderSavedSummaries();
+    renderLog();
+  });
 
-window.viewSummary = function(idx) {
-    const s = appData.summaries[idx];
-    if (s) document.getElementById('summaryResult').textContent = s.text;
-};
+  document.getElementById("printPeriodBtn").addEventListener("click", () => window.print());
+  document.getElementById("csvPeriodBtn").addEventListener("click", () => {
+    if (!currentPeriodData) { toast("Vui lòng xem thống kê trước khi xuất."); return; }
+    let csv = "Hạng,Họ tên,Tổ,Điểm ròng\n";
+    currentPeriodData.studentNet.forEach((s, i) => { csv += (i + 1) + ",\"" + s.name + "\",Tổ " + s.team + "," + s.net + "\n"; });
+    downloadFile("tongket_" + currentPeriodData.label.replace(/\s+/g, "_") + ".csv", csv);
+  });
 
-window.deleteSummary = function(idx) {
-    if (confirm('Xóa tổng kết này?')) {
-        appData.summaries.splice(idx, 1);
-        saveData();
-        updateSavedSummaries();
-        document.getElementById('summaryResult').textContent = 'Đã xóa.';
-    }
-};
+  // --- Backup / Restore / CSV / Print / Reset ---
+  document.getElementById("backupBtn").addEventListener("click", () => {
+    downloadFile("VuonUomHanhPhuc_11B1_backup_" + todayISO() + ".json", JSON.stringify(DB, null, 2), "application/json");
+    toast("Đã tải file sao lưu JSON.");
+  });
 
-document.getElementById('printSummary').addEventListener('click', function() {
-    const content = document.getElementById('summaryResult').textContent;
-    if (!content.trim()) { alert('Không có nội dung để in.'); return; }
-    const win = window.open('', '_blank', 'width=800,height=600');
-    win.document.write('<html><head><title>Báo cáo tổng kết</title><style>body{font-family:sans-serif;padding:30px;line-height:1.6;}</style></head><body><pre>' +
-        content + '</pre></body></html>');
-    win.document.close();
-    win.print();
-});
+  document.getElementById("restoreInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed || !Array.isArray(parsed.students)) { toast("File không hợp lệ."); return; }
+        if (!confirm("Khôi phục sẽ THAY THẾ toàn bộ dữ liệu hiện tại bằng dữ liệu trong file. Bạn có chắc chắn?")) return;
+        DB = parsed;
+        if (!DB.summaries) DB.summaries = [];
+        if (!DB.logs) DB.logs = [];
+        saveDB();
+        toast("Khôi phục dữ liệu thành công.");
+        renderAll();
+      } catch (err) { toast("Không đọc được file JSON."); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
 
-document.getElementById('deleteSummary').addEventListener('click', function() {
-    if (confirm('Xóa toàn bộ tổng kết đã lưu?')) {
-        appData.summaries = [];
-        saveData();
-        updateSavedSummaries();
-        document.getElementById('summaryResult').textContent = 'Đã xóa tất cả tổng kết.';
-    }
-});
+  document.getElementById("csvStudentsBtn").addEventListener("click", () => {
+    let csv = "Họ tên,Tổ,Điểm,Cấp độ\n";
+    DB.students.forEach(s => { csv += "\"" + s.name + "\",Tổ " + s.team + "," + s.points + ",\"" + getLevel(s.points).name + "\"\n"; });
+    downloadFile("danhsach_11B1.csv", csv);
+  });
 
-// ----- Garden controls -----
-document.getElementById('searchStudent').addEventListener('input', renderGarden);
-document.getElementById('filterTeam').addEventListener('change', renderGarden);
-document.getElementById('sortGarden').addEventListener('change', renderGarden);
-document.getElementById('resetGardenFilters').addEventListener('click', function() {
-    document.getElementById('searchStudent').value = '';
-    document.getElementById('filterTeam').value = 'all';
-    document.getElementById('sortGarden').value = 'name';
-    renderGarden();
-});
-
-// ----- Tabs -----
-document.querySelectorAll('#tabNav button').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('#tabNav button').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        const tab = this.dataset.tab;
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-        if (tab === 'log') {
-            populateLogFilters();
-            renderLog({});
-        }
-        if (tab === 'rankings') renderRankings();
-        if (tab === 'teamManage') renderTeamManage();
-        if (tab === 'garden') renderGarden();
+  document.getElementById("csvLogsBtn").addEventListener("click", () => {
+    let csv = "Thời gian,Học sinh,Tổ,Loại,Nội dung,Điểm,Ghi chú,Người thực hiện\n";
+    DB.logs.forEach(l => {
+      csv += [l.time, l.studentName, l.team, l.type, '"' + l.content + '"', l.points, '"' + (l.note || "") + '"', l.actor].join(",") + "\n";
     });
-});
+    downloadFile("nhatky_11B1.csv", csv);
+  });
 
-// ----- Xuất/nhập dữ liệu (gắn vào các nút ở footer, được tạo trong main.js) -----
-// Các hàm này sẽ được gọi từ main.js sau khi tạo footer
+  document.getElementById("printAllBtn").addEventListener("click", () => window.print());
+
+  document.getElementById("resetDataBtn").addEventListener("click", () => {
+    const phrase = "XOA DU LIEU";
+    const input = prompt("Thao tác này sẽ XÓA TOÀN BỘ dữ liệu (điểm, nhật ký, tổng kết) và không thể khôi phục nếu chưa sao lưu.\nGõ chính xác cụm từ: " + phrase + " để xác nhận.");
+    if (input !== phrase) { toast("Đã hủy — cụm xác nhận không khớp."); return; }
+    DB = buildInitialData();
+    saveDB();
+    toast("Đã đặt lại toàn bộ dữ liệu về trạng thái ban đầu.");
+    renderAll();
+  });
+}
+
+// Expose handlers to global (dùng trong onclick inline)
+window.AppUI = {
+  openPoint: openPointModal,
+  openDetail: openDetailModal,
+  doTransfer: (id, val) => {
+    const s = DB.students.find(x => x.id === id);
+    const t = Number(val);
+    if (!s) return;
+    transferStudent(s, t);
+    toast("Đã chuyển " + s.name + " sang Tổ " + t + ".", true);
+    renderAll();
+  },
+  undoOne: undoSpecificLog,
+  viewSummary: viewSummary,
+  deleteSummary: deleteSummary
+};
