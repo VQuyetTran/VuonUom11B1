@@ -3,7 +3,7 @@
 
 const CLASS_INFO = {
   schoolName: "THCS&THPT Hiển Nhân",
-  className: "11B1",
+  className: "10/5",
   teacher: "Trần Thị Nguyệt",
   schoolYear: "2026–2027",
   websiteName: "VƯỜN ƯƠM HẠNH PHÚC"
@@ -95,5 +95,5 @@ const SEMESTERS = {
   hk2: { label: "Học kì II", start: 19, end: 35 }
 };
 
-const STORAGE_KEY = "vuon_uom_11b1_data_v1";
+const STORAGE_KEY = "vuon_uom_10/5_data_v1";
 const DATA_VERSION = 1;

@@ -1,4 +1,4 @@
-# 🌱 VƯỜN ƯƠM HẠNH PHÚC – Lớp 11B1
+# 🌱 VƯỜN ƯƠM HẠNH PHÚC – Lớp 10/5
 
 Hệ thống quản lý thi đua lớp học với giao diện trực quan, tích hợp cây phát triển, bảng xếp hạng, nhật ký và tổng kết.
 

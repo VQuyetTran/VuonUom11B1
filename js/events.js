@@ -237,7 +237,7 @@ function initEvents() {
 
   // --- Backup / Restore / CSV / Print / Reset ---
   document.getElementById("backupBtn").addEventListener("click", () => {
-    downloadFile("VuonUomHanhPhuc_11B1_backup_" + todayISO() + ".json", JSON.stringify(DB, null, 2), "application/json");
+    downloadFile("VuonUomHanhPhuc_10/5_backup_" + todayISO() + ".json", JSON.stringify(DB, null, 2), "application/json");
     toast("Đã tải file sao lưu JSON.");
   });
 
@@ -265,7 +265,7 @@ function initEvents() {
   document.getElementById("csvStudentsBtn").addEventListener("click", () => {
     let csv = "Họ tên,Tổ,Điểm,Cấp độ\n";
     DB.students.forEach(s => { csv += "\"" + s.name + "\",Tổ " + s.team + "," + s.points + ",\"" + getLevel(s.points).name + "\"\n"; });
-    downloadFile("danhsach_11B1.csv", csv);
+    downloadFile("danhsach_10/5.csv", csv);
   });
 
   document.getElementById("csvLogsBtn").addEventListener("click", () => {
@@ -273,7 +273,7 @@ function initEvents() {
     DB.logs.forEach(l => {
       csv += [l.time, l.studentName, l.team, l.type, '"' + l.content + '"', l.points, '"' + (l.note || "") + '"', l.actor].join(",") + "\n";
     });
-    downloadFile("nhatky_11B1.csv", csv);
+    downloadFile("nhatky_10/5.csv", csv);
   });
 
   document.getElementById("printAllBtn").addEventListener("click", () => window.print());
