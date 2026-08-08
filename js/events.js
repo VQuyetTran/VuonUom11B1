@@ -1,13 +1,15 @@
 // js/events.js
-// Các sự kiện và handlers (gắn vào các button, input, select...)
 
-// =========================================================
-// Modal ghi nhận điểm
-// =========================================================
 let activeStudentId = null;
 let selectedRuleId = null;
 
+// ===== Modal point =====
 function openPointModal(studentId) {
+  // Kiểm tra quyền: nếu không phải giáo viên thì không mở modal
+  if (!isTeacherMode) {
+    toast("⚠️ Bạn cần đăng nhập với quyền giáo viên để thực hiện thao tác này.");
+    return;
+  }
   activeStudentId = studentId;
   selectedRuleId = null;
   const s = DB.students.find(x => x.id === studentId);
@@ -31,15 +33,12 @@ function openPointModal(studentId) {
   });
   openModal("pointModal");
 }
-
 function ruleHtml(r) {
   const cls = r.points > 0 ? "plus" : "minus";
   return '<div class="rule-pick" data-rid="' + r.id + '"><span>' + r.label + '</span><span class="rule-pts ' + cls + '">' + (r.points > 0 ? "+" : "") + r.points + '</span></div>';
 }
 
-// =========================================================
-// Modal chi tiết học sinh
-// =========================================================
+// ===== Modal detail =====
 function openDetailModal(studentId) {
   const s = DB.students.find(x => x.id === studentId);
   if (!s) return;
@@ -62,9 +61,7 @@ function openDetailModal(studentId) {
   openModal("detailModal");
 }
 
-// =========================================================
-// Xem / Xóa tổng kết
-// =========================================================
+// ===== Xem / Xóa tổng kết =====
 function viewSummary(id) {
   const s = DB.summaries.find(x => x.id === id);
   if (!s) return;
@@ -80,8 +77,11 @@ function viewSummary(id) {
   document.getElementById("svComment").textContent = s.comment || "(Không có nhận xét)";
   openModal("summaryViewModal");
 }
-
 function deleteSummary(id) {
+  if (!isTeacherMode) {
+    toast("⚠️ Bạn cần đăng nhập với quyền giáo viên để xóa tổng kết.");
+    return;
+  }
   if (!confirm("Bạn có chắc muốn xóa bản tổng kết này? Thao tác không ảnh hưởng đến điểm và nhật ký.")) return;
   DB.summaries = DB.summaries.filter(s => s.id !== id);
   saveDB();
@@ -89,10 +89,20 @@ function deleteSummary(id) {
   toast("Đã xóa bản tổng kết.");
 }
 
-// =========================================================
-// Gắn sự kiện cho các nút, input, select...
-// =========================================================
+// ===== Khởi tạo tất cả sự kiện =====
 function initEvents() {
+  // --- Sự kiện đăng nhập ---
+  document.getElementById("loginBtn").addEventListener("click", function() {
+    if (isTeacherMode) {
+      logout();
+      return;
+    }
+    const pwd = prompt("Nhập mật khẩu giáo viên:");
+    if (pwd !== null) {
+      login(pwd);
+    }
+  });
+
   // --- Navigation & Sidebar ---
   document.querySelectorAll(".nav-item").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -119,7 +129,6 @@ function initEvents() {
     document.getElementById("sidebarNav").classList.remove("open");
     document.getElementById("sidebarOverlay").classList.remove("show");
   }
-  // expose để dùng nếu cần
   window.closeSidebar = closeSidebar;
 
   // --- Present mode ---
@@ -141,17 +150,28 @@ function initEvents() {
   });
 
   // --- Undo ---
-  document.getElementById("undoLastLogBtn").addEventListener("click", undoLast);
-  document.getElementById("undoTransferBtn").addEventListener("click", undoLast);
+  document.getElementById("undoLastLogBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
+    undoLast();
+  });
+  document.getElementById("undoTransferBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
+    undoLast();
+  });
 
   // --- Even teams ---
-  document.getElementById("evenTeamsBtn").addEventListener("click", () => {
+  document.getElementById("evenTeamsBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     if (!confirm("Xếp đều lại tất cả học sinh vào " + DB.numTeams + " tổ theo thứ tự danh sách?")) return;
     evenlyDistributeTeams();
   });
 
   // --- Modal point confirm ---
-  document.getElementById("pmConfirmBtn").addEventListener("click", () => {
+  document.getElementById("pmConfirmBtn").addEventListener("click", function() {
+    if (!isTeacherMode) {
+      toast("⚠️ Bạn cần đăng nhập với quyền giáo viên.");
+      return;
+    }
     if (!activeStudentId) { toast("Vui lòng chọn học sinh."); return; }
     if (!selectedRuleId) { toast("Vui lòng chọn một hành vi trước khi xác nhận."); return; }
     const s = DB.students.find(x => x.id === activeStudentId);
@@ -164,7 +184,8 @@ function initEvents() {
   });
 
   // --- Detail modal: ghi nhận điểm ---
-  document.getElementById("dtGhiNhanBtn").addEventListener("click", () => {
+  document.getElementById("dtGhiNhanBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     closeModal("detailModal");
     openPointModal(activeStudentId);
   });
@@ -190,7 +211,8 @@ function initEvents() {
   });
 
   // --- Save summary ---
-  document.getElementById("saveSummaryBtn").addEventListener("click", () => {
+  document.getElementById("saveSummaryBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     if (!currentPeriodData) { toast("Vui lòng chọn thời gian và xem thống kê trước."); return; }
     const comment = document.getElementById("periodComment").value.trim();
     const summary = {
@@ -236,12 +258,14 @@ function initEvents() {
   });
 
   // --- Backup / Restore / CSV / Print / Reset ---
-  document.getElementById("backupBtn").addEventListener("click", () => {
+  document.getElementById("backupBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     downloadFile("VuonUomHanhPhuc_10/5_backup_" + todayISO() + ".json", JSON.stringify(DB, null, 2), "application/json");
     toast("Đã tải file sao lưu JSON.");
   });
 
-  document.getElementById("restoreInput").addEventListener("change", (e) => {
+  document.getElementById("restoreInput").addEventListener("change", function(e) {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -278,7 +302,8 @@ function initEvents() {
 
   document.getElementById("printAllBtn").addEventListener("click", () => window.print());
 
-  document.getElementById("resetDataBtn").addEventListener("click", () => {
+  document.getElementById("resetDataBtn").addEventListener("click", function() {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     const phrase = "XOA DU LIEU";
     const input = prompt("Thao tác này sẽ XÓA TOÀN BỘ dữ liệu (điểm, nhật ký, tổng kết) và không thể khôi phục nếu chưa sao lưu.\nGõ chính xác cụm từ: " + phrase + " để xác nhận.");
     if (input !== phrase) { toast("Đã hủy — cụm xác nhận không khớp."); return; }
@@ -289,11 +314,12 @@ function initEvents() {
   });
 }
 
-// Expose handlers to global (dùng trong onclick inline)
+// Expose global handlers
 window.AppUI = {
   openPoint: openPointModal,
   openDetail: openDetailModal,
   doTransfer: (id, val) => {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
     const s = DB.students.find(x => x.id === id);
     const t = Number(val);
     if (!s) return;
@@ -301,7 +327,10 @@ window.AppUI = {
     toast("Đã chuyển " + s.name + " sang Tổ " + t + ".", true);
     renderAll();
   },
-  undoOne: undoSpecificLog,
+  undoOne: (logId) => {
+    if (!isTeacherMode) { toast("⚠️ Cần quyền giáo viên."); return; }
+    undoSpecificLog(logId);
+  },
   viewSummary: viewSummary,
   deleteSummary: deleteSummary
 };

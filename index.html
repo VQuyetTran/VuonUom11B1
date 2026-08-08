@@ -30,6 +30,11 @@
             <p>Giáo viên chủ nhiệm</p>
           </div>
         </div>
+        <!-- Phần xác thực -->
+        <div id="authSection" style="display:flex;align-items:center;gap:10px;margin-left:8px;">
+          <span id="authStatus" style="font-size:12px;font-weight:600;color:var(--text-light);">👨‍🎓 Học sinh (xem)</span>
+          <button class="btn primary" id="loginBtn">🔑 Đăng nhập giáo viên</button>
+        </div>
       </div>
     </header>
 
@@ -75,8 +80,8 @@
           <div class="view-header">
             <div><h2>Xếp học sinh vào tổ</h2><div class="sub">Quản lí sĩ số và chuyển tổ cho học sinh</div></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="btn outline" id="undoTransferBtn">↺ Hoàn tác chuyển tổ</button>
-              <button class="btn primary" id="evenTeamsBtn">⚖️ Xếp đều vào tổ</button>
+              <button class="btn outline teacher-only" id="undoTransferBtn">↺ Hoàn tác chuyển tổ</button>
+              <button class="btn primary teacher-only" id="evenTeamsBtn">⚖️ Xếp đều vào tổ</button>
             </div>
           </div>
           <div class="team-grid" id="teamSummaryGrid"></div>
@@ -127,7 +132,7 @@
             <label style="font-size:12px;color:var(--text-light);display:block;margin:14px 0 4px;">Nhận xét của giáo viên</label>
             <textarea class="comment" id="periodComment" placeholder="Nhận xét chung của giáo viên chủ nhiệm về kỳ này..."></textarea>
             <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
-              <button class="btn primary" id="saveSummaryBtn">💾 Lưu tổng kết</button>
+              <button class="btn primary teacher-only" id="saveSummaryBtn">💾 Lưu tổng kết</button>
               <button class="btn outline" id="printPeriodBtn">🖨️ In / Xuất báo cáo</button>
               <button class="btn outline" id="csvPeriodBtn">⬇️ Xuất CSV</button>
             </div>
@@ -140,7 +145,7 @@
         <section class="view" id="view-log">
           <div class="view-header">
             <div><h2>Nhật ký hoạt động</h2><div class="sub">Toàn bộ lịch sử cộng điểm, trừ điểm và chuyển tổ</div></div>
-            <button class="btn outline" id="undoLastLogBtn">↺ Hoàn tác gần nhất</button>
+            <button class="btn outline teacher-only" id="undoLastLogBtn">↺ Hoàn tác gần nhất</button>
           </div>
           <div class="log-filters">
             <select id="logFilterStudent"><option value="all">Tất cả học sinh</option></select>
@@ -191,12 +196,12 @@
               Chức năng đặt lại / xoá dữ liệu yêu cầu gõ đúng cụm xác nhận — đây chỉ là lớp bảo vệ giao diện, không phải cơ chế bảo mật tuyệt đối.
             </p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn primary" id="backupBtn">⬇️ Sao lưu ra file JSON</button>
-              <label class="btn outline" style="cursor:pointer;">⬆️ Khôi phục từ JSON<input type="file" id="restoreInput" accept=".json" style="display:none;"></label>
+              <button class="btn primary teacher-only" id="backupBtn">⬇️ Sao lưu ra file JSON</button>
+              <label class="btn outline teacher-only" style="cursor:pointer;">⬆️ Khôi phục từ JSON<input type="file" id="restoreInput" accept=".json" style="display:none;"></label>
               <button class="btn outline" id="csvStudentsBtn">⬇️ Xuất danh sách CSV</button>
               <button class="btn outline" id="csvLogsBtn">⬇️ Xuất nhật ký CSV</button>
               <button class="btn outline" id="printAllBtn">🖨️ In trang hiện tại</button>
-              <button class="btn danger" id="resetDataBtn">🗑️ Đặt lại toàn bộ dữ liệu</button>
+              <button class="btn danger teacher-only" id="resetDataBtn">🗑️ Đặt lại toàn bộ dữ liệu</button>
             </div>
           </div>
           <div class="week-box">
@@ -255,7 +260,7 @@
       <div id="dtLogHistory" style="max-height:220px;overflow-y:auto;"></div>
       <div class="modal-actions">
         <button class="btn outline" data-close="detailModal">Đóng</button>
-        <button class="btn primary" id="dtGhiNhanBtn">+ Ghi nhận điểm</button>
+        <button class="btn primary teacher-only" id="dtGhiNhanBtn">+ Ghi nhận điểm</button>
       </div>
     </div>
   </div>

@@ -1,7 +1,6 @@
 // js/data.js
-// Quản lý dữ liệu và các hàm xử lý logic liên quan đến DB
-
 let DB = loadDB();
+let isTeacherMode = false;
 
 function buildInitialData() {
   const students = STUDENT_NAMES.map((name, i) => ({
@@ -52,8 +51,62 @@ function saveDB() {
   }
 }
 
+// ===== BẢO MẬT: đăng nhập, đăng xuất, cập nhật UI =====
+function login(password) {
+  if (password === APP_PASSWORD) {
+    isTeacherMode = true;
+    toast("✅ Đăng nhập thành công với quyền giáo viên.");
+    updateUIByRole();
+    return true;
+  } else {
+    toast("❌ Mật khẩu không đúng.");
+    return false;
+  }
+}
+
+function logout() {
+  isTeacherMode = false;
+  toast("Đã đăng xuất.");
+  updateUIByRole();
+}
+
+function updateUIByRole() {
+  // Ẩn/hiện các phần tử có class teacher-only
+  const teacherEls = document.querySelectorAll(".teacher-only");
+  teacherEls.forEach(el => {
+    if (isTeacherMode) {
+      el.classList.add("active");
+      el.style.display = ""; // reset về mặc định (có thể bị CSS ghi đè)
+    } else {
+      el.classList.remove("active");
+      el.style.display = "none";
+    }
+  });
+
+  // Vô hiệu hóa các select chuyển tổ (có class editable-input)
+  const editableSelects = document.querySelectorAll(".editable-input");
+  editableSelects.forEach(el => {
+    el.disabled = !isTeacherMode;
+  });
+
+  // Cập nhật nút đăng nhập và trạng thái
+  const loginBtn = document.getElementById("loginBtn");
+  const authStatus = document.getElementById("authStatus");
+  if (loginBtn) {
+    if (isTeacherMode) {
+      loginBtn.textContent = "🔒 Đăng xuất (GV)";
+      loginBtn.className = "btn outline";
+      if (authStatus) authStatus.textContent = "👩‍🏫 Giáo viên (toàn quyền)";
+    } else {
+      loginBtn.textContent = "🔑 Đăng nhập giáo viên";
+      loginBtn.className = "btn primary";
+      if (authStatus) authStatus.textContent = "👨‍🎓 Học sinh (xem)";
+    }
+  }
+}
+
 // =========================================================
-// Các hàm tiện ích chung
+// Các hàm tiện ích giữ nguyên
 // =========================================================
 function pad(n) { return n < 10 ? "0" + n : "" + n; }
 function todayISO() { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
@@ -73,12 +126,9 @@ function abbreviate(name) {
 function displayName(name) { return DB.presentMode ? abbreviate(name) : name; }
 
 function ruleById(id) { return POINT_RULES.find(r => r.id === id); }
-
 function teamColor(t) { const c = ["var(--team1)", "var(--team2)", "var(--team3)", "var(--team4)"]; return c[(t - 1) % 4]; }
 
-// =========================================================
-// Cấp độ / Huy hiệu
-// =========================================================
+// Cấp độ
 function getLevel(points) {
   let lvl = LEVELS[0];
   for (const l of LEVELS) {
@@ -93,8 +143,7 @@ function getNextLevel(points) {
   return null;
 }
 function levelProgress(points) {
-  const cur = getLevel(points),
-    next = getNextLevel(points);
+  const cur = getLevel(points), next = getNextLevel(points);
   if (!next) return { pct: 100, remain: 0, nextName: null };
   const span = next.threshold - cur.threshold;
   const done = points - cur.threshold;
@@ -125,9 +174,7 @@ function studentBadges(student) {
   });
 }
 
-// =========================================================
-// Tuần / Thời gian
-// =========================================================
+// Tuần
 function currentWeekNumber(dateObj) {
   const d = dateObj || new Date();
   const start = dateFromISO(DB.week1Start);
@@ -152,15 +199,12 @@ function logsInRange(fromISO, toISO) {
   return DB.logs.filter(l => l.dateISO >= fromISO && l.dateISO <= toISO);
 }
 function netPointsInRange(studentId, fromDate, toDate) {
-  const fromISO = isoOf(fromDate),
-    toISO = isoOf(toDate);
+  const fromISO = isoOf(fromDate), toISO = isoOf(toDate);
   return DB.logs.filter(l => l.studentId === studentId && l.dateISO >= fromISO && l.dateISO <= toISO && (l.type === "plus" || l.type === "minus"))
     .reduce((s, l) => s + l.points, 0);
 }
 
-// =========================================================
 // Thống kê tổ
-// =========================================================
 function teamAggregates() {
   const arr = [];
   for (let t = 1; t <= DB.numTeams; t++) {
@@ -170,13 +214,10 @@ function teamAggregates() {
   }
   return arr;
 }
-
 function rankMapByPoints() {
   const sorted = DB.students.slice().sort((a, b) => b.points - a.points);
   const map = {};
-  let rank = 0,
-    prevPts = null,
-    seen = 0;
+  let rank = 0, prevPts = null, seen = 0;
   sorted.forEach(s => {
     seen++;
     if (s.points !== prevPts) { rank = seen;
@@ -186,9 +227,7 @@ function rankMapByPoints() {
   return map;
 }
 
-// =========================================================
-// Các hàm thao tác dữ liệu (cộng điểm, chuyển tổ, hoàn tác)
-// =========================================================
+// Hành động
 function addPointLog(student, rule, note) {
   const before = student.points;
   student.points = Math.max(0, student.points + rule.points);
@@ -297,12 +336,16 @@ function undoSpecificLog(logId) {
   renderAll();
 }
 
-// Hàm export để sử dụng trong các file khác (nếu cần)
+// Export (nếu cần dùng từ window)
 window.AppData = {
   DB,
   saveDB,
   loadDB,
   buildInitialData,
+  login,
+  logout,
+  updateUIByRole,
+  isTeacherMode: () => isTeacherMode,
   getLevel,
   getNextLevel,
   levelProgress,

@@ -1004,3 +1004,15 @@ textarea.comment {
     background: #fff;
   }
 }
+
+/* Thêm vào cuối file hoặc bất kỳ đâu */
+.teacher-only {
+  display: none; /* mặc định ẩn, sẽ hiện khi có class active */
+}
+.teacher-only.active {
+  display: inline-flex !important; /* hoặc block, tùy */
+}
+/* Để đảm bảo các nút có thể hiển thị đúng */
+.btn.teacher-only.active {
+  display: inline-flex;
+}

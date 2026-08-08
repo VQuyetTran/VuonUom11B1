@@ -1,9 +1,6 @@
 // js/ui.js
-// Các hàm render giao diện và tiện ích UI (toast, modal, download...)
+// (giữ nguyên các hàm cũ, chỉ bổ sung/ sửa ở những chỗ render)
 
-// =========================================================
-// Toast
-// =========================================================
 function toast(msg, allowUndo) {
   const wrap = document.getElementById("toast-wrap");
   const el = document.createElement("div");
@@ -21,13 +18,9 @@ function toast(msg, allowUndo) {
   }, 4500);
 }
 
-// =========================================================
-// Modal
-// =========================================================
 function openModal(id) { document.getElementById(id).classList.add("show"); }
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
-// Gán sự kiện đóng modal (được gọi từ main.js hoặc events.js)
 function initModalCloseEvents() {
   document.querySelectorAll("[data-close]").forEach(b => {
     b.addEventListener("click", () => closeModal(b.getAttribute("data-close")));
@@ -37,9 +30,6 @@ function initModalCloseEvents() {
   });
 }
 
-// =========================================================
-// Download file
-// =========================================================
 function downloadFile(filename, content, mime) {
   const blob = new Blob([content], { type: mime || "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -52,9 +42,8 @@ function downloadFile(filename, content, mime) {
     a.remove(); }, 200);
 }
 
-// =========================================================
-// Render: Stats Bar
-// =========================================================
+// ===== RENDER =====
+
 function renderStatsBar() {
   const bar = document.getElementById("statsBar");
   const students = DB.students;
@@ -76,9 +65,6 @@ function renderStatsBar() {
 }
 function chip(v, l) { return '<div class="stat-chip"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
 
-// =========================================================
-// Render: Sidebar Summary
-// =========================================================
 function renderSideSummary() {
   const wk = currentWeekNumber();
   const box = document.getElementById("sideSummary");
@@ -97,9 +83,6 @@ function renderSideSummary() {
     '<div class="dayof">Ngày ' + dayOf + ' / 7</div>';
 }
 
-// =========================================================
-// Render: Garden (Khu vườn)
-// =========================================================
 function populateTeamFilterOptions() {
   const sel = document.getElementById("filterTeam");
   sel.innerHTML = '<option value="all">Tất cả các tổ</option>' +
@@ -151,16 +134,15 @@ function renderGarden() {
       '<div class="next-lvl">' + (prog.nextName ? "Còn " + prog.remain + " điểm đến cấp '" + prog.nextName + "'" : "Đã đạt cấp cao nhất") + '</div>' +
       '<div class="badges-row">' + badges.map(b => '<span class="badge-ic" title="' + b.name + '">' + b.icon + '</span>').join("") + '</div>' +
       '<div class="cardbtns">' +
-      '<button class="btn primary" onclick="AppUI.openPoint(\'' + s.id + '\')">+ Ghi nhận điểm</button>' +
+      // Nút ghi điểm chỉ dành cho giáo viên -> thêm class teacher-only
+      '<button class="btn primary teacher-only" onclick="AppUI.openPoint(\'' + s.id + '\')">+ Ghi nhận điểm</button>' +
+      // Nút chi tiết dành cho tất cả
       '<button class="btn outline" onclick="AppUI.openDetail(\'' + s.id + '\')">Chi tiết</button>' +
       '</div>' +
       '</div>';
   }).join("");
 }
 
-// =========================================================
-// Render: Teams
-// =========================================================
 function renderTeams() {
   const teamGrid = document.getElementById("teamSummaryGrid");
   const agg = teamAggregates();
@@ -178,16 +160,13 @@ function renderTeams() {
   body.innerHTML = list.map((s, idx) => {
     let options = "";
     for (let t = 1; t <= DB.numTeams; t++) { options += '<option value="' + t + '" ' + (t === s.team ? "selected" : "") + '>Tổ ' + t + '</option>'; }
+    // Select chuyển tổ: chỉ giáo viên mới dùng được -> thêm class editable-input và teacher-only
     return '<tr><td>' + (idx + 1) + '</td><td>' + s.name + '</td><td>Tổ ' + s.team + '</td><td>' + s.points + '</td>' +
-      '<td><select class="team-select" onchange="AppUI.doTransfer(\'' + s.id + '\', this.value)">' + options + '</select></td></tr>';
+      '<td><select class="team-select editable-input teacher-only" onchange="AppUI.doTransfer(\'' + s.id + '\', this.value)">' + options + '</select></td></tr>';
   }).join("");
 }
 
-// =========================================================
-// Render: Ranking
-// =========================================================
 let currentRankTab = "personal";
-
 function renderRanking() {
   const ranks = rankMapByPoints();
   const tbody = document.querySelector("#rankPersonalTable tbody");
@@ -207,9 +186,7 @@ function renderRanking() {
 
   const agg = teamAggregates();
   const sortedTeams = agg.slice().sort((a, b) => b.total - a.total);
-  let rank = 0,
-    prev = null,
-    seen = 0;
+  let rank = 0, prev = null, seen = 0;
   const teamRanks = {};
   sortedTeams.forEach(t => { seen++; if (t.total !== prev) { rank = seen;
       prev = t.total; }
@@ -229,9 +206,6 @@ function renderRanking() {
   document.getElementById("rankTeamWrap").style.display = currentRankTab === "team" ? "block" : "none";
 }
 
-// =========================================================
-// Render: Rules
-// =========================================================
 function renderRules() {
   const map = { daily: "rules-daily", achieve: "rules-achieve", special: "rules-special", minor: "rules-minor", medium: "rules-medium", serious: "rules-serious" };
   Object.keys(map).forEach(g => {
@@ -248,9 +222,6 @@ function renderRules() {
   }).join("");
 }
 
-// =========================================================
-// Render: Log
-// =========================================================
 function renderLog() {
   const stF = document.getElementById("logFilterStudent").value;
   const teamF = document.getElementById("logFilterTeam").value;
@@ -279,7 +250,7 @@ function renderLog() {
     const typeLabel = l.type === "plus" ? "CỘNG ĐIỂM" : l.type === "minus" ? "TRỪ ĐIỂM" : l.type === "transfer" ? "CHUYỂN TỔ" : "TỔNG KẾT";
     const ptsCls = l.points > 0 ? "plus" : l.points < 0 ? "minus" : "";
     const undoBtn = (l.type === "plus" || l.type === "minus" || (l.type === "transfer" && l.oldTeam)) ?
-      '<button class="btn small outline" style="margin-top:6px;" onclick="AppUI.undoOne(\'' + l.id + '\')">↺ Hoàn tác</button>' : "";
+      '<button class="btn small outline teacher-only" style="margin-top:6px;" onclick="AppUI.undoOne(\'' + l.id + '\')">↺ Hoàn tác</button>' : "";
     return '<div class="log-item"><div class="l-left">' +
       '<span class="log-tag">' + typeLabel + '</span><span class="l-name">' + (l.studentName || "—") + '</span>' +
       (l.team ? ' <span style="color:var(--text-light);font-size:11px;">(Tổ ' + l.team + ')</span>' : '') +
@@ -290,9 +261,6 @@ function renderLog() {
   }).join("");
 }
 
-// =========================================================
-// Render: Time & Summary
-// =========================================================
 let currentPeriodType = "week";
 let currentPeriodData = null;
 
@@ -343,16 +311,14 @@ function loadPeriodStats() {
   } else if (currentPeriodType === "month") {
     const v = document.getElementById("monthSelect").value;
     const [y, m] = v.split("-").map(Number);
-    const first = new Date(y, m - 1, 1),
-      last = new Date(y, m, 0);
+    const first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
     fromISO = isoOf(first);
     toISO = isoOf(last);
     label = "Tháng " + m + "/" + y;
   } else {
     const sem = document.getElementById("semSelect").value;
     const s = SEMESTERS[sem];
-    const r1 = weekRange(s.start),
-      r2 = weekRange(s.end);
+    const r1 = weekRange(s.start), r2 = weekRange(s.end);
     fromISO = isoOf(r1.start);
     toISO = isoOf(r2.end);
     label = s.label + " (Tuần " + s.start + "–" + s.end + ")";
@@ -403,14 +369,13 @@ function renderSavedSummaries() {
     return '<div class="saved-summary"><div><b>' + s.label + '</b><div style="font-size:11px;color:var(--text-light);">Lập ngày ' + s.createdAt + ' bởi ' + s.author + '</div></div>' +
       '<div style="display:flex;gap:6px;">' +
       '<button class="btn small outline" onclick="AppUI.viewSummary(\'' + s.id + '\')">Xem lại</button>' +
-      '<button class="btn small danger" onclick="AppUI.deleteSummary(\'' + s.id + '\')">Xóa</button>' +
+      // Nút xóa chỉ dành cho giáo viên
+      '<button class="btn small danger teacher-only" onclick="AppUI.deleteSummary(\'' + s.id + '\')">Xóa</button>' +
       '</div></div>';
   }).join("");
 }
 
-// =========================================================
-// Render All
-// =========================================================
+// ===== RENDER ALL =====
 function renderAll() {
   populateTeamFilterOptions();
   renderStatsBar();
@@ -424,4 +389,7 @@ function renderAll() {
   document.getElementById("dataVersionInfo").textContent =
     "Phiên bản dữ liệu: v" + DB.version + " · Tổng số sự kiện nhật ký: " + DB.logs.length + " · Bản tổng kết đã lưu: " + DB.summaries.length;
   document.getElementById("presentModeBtn").textContent = DB.presentMode ? "🎭 Đang trình chiếu (bật)" : "🎭 Chế độ trình chiếu";
+
+  // Cập nhật UI theo quyền
+  updateUIByRole();
 }
