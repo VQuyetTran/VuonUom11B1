@@ -1,3 +1,4 @@
+/* Toàn bộ CSS giữ nguyên như cũ, thêm một số class mới nếu cần */
 :root {
   --primary: #2e8b57;
   --primary-dark: #1f6b41;
@@ -1004,15 +1005,10 @@ textarea.comment {
     background: #fff;
   }
 }
-
-/* Thêm vào cuối file hoặc bất kỳ đâu */
+/* Ẩn mặc định phần tử chỉ dành cho giáo viên (sẽ được bật khi đăng nhập) */
 .teacher-only {
-  display: none; /* mặc định ẩn, sẽ hiện khi có class active */
+  display: none !important;
 }
 .teacher-only.active {
-  display: inline-flex !important; /* hoặc block, tùy */
-}
-/* Để đảm bảo các nút có thể hiển thị đúng */
-.btn.teacher-only.active {
-  display: inline-flex;
+  display: inline-flex !important;
 }

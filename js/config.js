@@ -1,16 +1,18 @@
 // js/config.js
+// Cấu hình trung tâm của ứng dụng
+
 const CLASS_INFO = {
   schoolName: "THCS&THPT Hiển Nhân",
-  className: "10/5",
+  className: "11B1",
   teacher: "Trần Thị Nguyệt",
   schoolYear: "2026–2027",
   websiteName: "VƯỜN ƯƠM HẠNH PHÚC"
 };
 
-const APP_PASSWORD = "admin123"; // Mật khẩu cho giáo viên, có thể thay đổi
+const APP_PASSWORD = "admin123"; // Mật khẩu dành cho giáo viên (có thể thay đổi)
 
 const NUM_TEAMS = 4;
-const WEEK1_START = "2026-08-10";
+const WEEK1_START = "2026-08-10"; // Thứ Hai của tuần 1 (yyyy-mm-dd)
 
 const STUDENT_NAMES = [
   "Diệp Thế Gia Bảo", "Nguyễn Minh Bình", "Trần Thị Ngọc Diệp", "Nguyễn Phan Ngọc Hân", "Lê Đức Hậu",
@@ -23,6 +25,7 @@ const STUDENT_NAMES = [
   "Phan Thành Vinh", "Huỳnh Nữ Thu Yên", "Đặng Văn Hà"
 ];
 
+// Cấp độ phát triển của cây
 const LEVELS = [
   { threshold: 0, name: "Hạt giống", icon: "🌱", color: "#8bc78e" },
   { threshold: 40, name: "Mầm non", icon: "🌿", color: "#5fae6b" },
@@ -33,6 +36,7 @@ const LEVELS = [
   { threshold: 400, name: "Cây cổ thụ", icon: "🌳✨", color: "#caa23c" }
 ];
 
+// Quy định cộng / trừ điểm
 const POINT_RULES = [
   { id: "r1", group: "daily", label: "Phát biểu xây dựng bài", points: 5 },
   { id: "r2", group: "daily", label: "Đi học đúng giờ & gọn gàng", points: 5 },
@@ -56,21 +60,36 @@ const POINT_RULES = [
   { id: "r20", group: "serious", label: "Vi phạm nội quy nghiêm trọng", points: -20 }
 ];
 
+// Huy hiệu
 const BADGE_CONFIG = [
-  { id: "b1", name: "Chăm chỉ", icon: "🐝", desc: "Tích lũy ≥ 8 lượt đi học đúng giờ / chuẩn bị bài / hoàn thành BTVN",
-    check: (ctx) => ctx.countRules(["r2", "r3", "r6"]) >= 8 },
-  { id: "b2", name: "Tiến bộ", icon: "📈", desc: "Được ghi nhận ≥ 3 lần 'Có tiến bộ trong tiết học'",
-    check: (ctx) => ctx.countRules(["r5"]) >= 3 },
-  { id: "b3", name: "Học tập tích cực", icon: "🙋", desc: "Phát biểu xây dựng bài ≥ 5 lần",
-    check: (ctx) => ctx.countRules(["r1"]) >= 5 },
-  { id: "b4", name: "Gương mẫu", icon: "🌟", desc: "Đi học đúng giờ ≥ 10 lần và không vi phạm nghiêm trọng",
-    check: (ctx) => ctx.countRules(["r2"]) >= 10 && ctx.countRules(["r20"]) === 0 },
-  { id: "b5", name: "Hỗ trợ tập thể", icon: "🤝", desc: "Giúp đỡ bạn bè hoặc hoàn thành xuất sắc nhiệm vụ tổ ≥ 3 lần",
-    check: (ctx) => ctx.countRules(["r8", "r10"]) >= 3 },
-  { id: "b6", name: "Thành viên nổi bật", icon: "🏅", desc: "Có tổng điểm cao nhất trong tổ hiện tại",
-    check: (ctx) => ctx.isTeamTop() },
-  { id: "b7", name: "Ngôi sao của tuần", icon: "⭐", desc: "Có điểm cộng ròng cao nhất lớp trong tuần hiện tại",
-    check: (ctx) => ctx.isWeekStar() }
+  {
+    id: "b1", name: "Chăm chỉ", icon: "🐝", desc: "Tích lũy ≥ 8 lượt đi học đúng giờ / chuẩn bị bài / hoàn thành BTVN",
+    check: (ctx) => ctx.countRules(["r2", "r3", "r6"]) >= 8
+  },
+  {
+    id: "b2", name: "Tiến bộ", icon: "📈", desc: "Được ghi nhận ≥ 3 lần 'Có tiến bộ trong tiết học'",
+    check: (ctx) => ctx.countRules(["r5"]) >= 3
+  },
+  {
+    id: "b3", name: "Học tập tích cực", icon: "🙋", desc: "Phát biểu xây dựng bài ≥ 5 lần",
+    check: (ctx) => ctx.countRules(["r1"]) >= 5
+  },
+  {
+    id: "b4", name: "Gương mẫu", icon: "🌟", desc: "Đi học đúng giờ ≥ 10 lần và không vi phạm nghiêm trọng",
+    check: (ctx) => ctx.countRules(["r2"]) >= 10 && ctx.countRules(["r20"]) === 0
+  },
+  {
+    id: "b5", name: "Hỗ trợ tập thể", icon: "🤝", desc: "Giúp đỡ bạn bè hoặc hoàn thành xuất sắc nhiệm vụ tổ ≥ 3 lần",
+    check: (ctx) => ctx.countRules(["r8", "r10"]) >= 3
+  },
+  {
+    id: "b6", name: "Thành viên nổi bật", icon: "🏅", desc: "Có tổng điểm cao nhất trong tổ hiện tại",
+    check: (ctx) => ctx.isTeamTop()
+  },
+  {
+    id: "b7", name: "Ngôi sao của tuần", icon: "⭐", desc: "Có điểm cộng ròng cao nhất lớp trong tuần hiện tại",
+    check: (ctx) => ctx.isWeekStar()
+  }
 ];
 
 const SEMESTERS = {
@@ -78,5 +97,5 @@ const SEMESTERS = {
   hk2: { label: "Học kì II", start: 19, end: 35 }
 };
 
-const STORAGE_KEY = "vuon_uom_10/5_data_v1";
+const STORAGE_KEY = "vuon_uom_11b1_data_v1";
 const DATA_VERSION = 1;

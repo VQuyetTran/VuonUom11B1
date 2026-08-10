@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>Vườn Ươm Hạnh Phúc - Lớp 10/5</title>
+  <title>Vườn Ươm Hạnh Phúc - Lớp 11B1</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
           <div class="logo">🌱</div>
           <div class="titles">
             <h1>VƯỜN ƯƠM HẠNH PHÚC</h1>
-            <p>Lớp 10/5 · Hành trình trưởng thành</p>
+            <p>Lớp 11B1 · Hành trình trưởng thành</p>
           </div>
         </div>
       </div>
@@ -30,9 +30,9 @@
             <p>Giáo viên chủ nhiệm</p>
           </div>
         </div>
-        <!-- Phần xác thực -->
-        <div id="authSection" style="display:flex;align-items:center;gap:10px;margin-left:8px;">
-          <span id="authStatus" style="font-size:12px;font-weight:600;color:var(--text-light);">👨‍🎓 Học sinh (xem)</span>
+        <!-- Phần đăng nhập -->
+        <div id="authSection" style="display:flex;align-items:center;gap:10px;margin-left:10px;">
+          <span id="authStatus" style="font-size:12px;font-weight:600;">👨‍🎓 Học sinh (xem)</span>
           <button class="btn primary" id="loginBtn">🔑 Đăng nhập giáo viên</button>
         </div>
       </div>
@@ -61,6 +61,7 @@
         <section class="view active" id="view-garden">
           <div class="view-header">
             <div><h2>Khu vườn lớp học</h2><div class="sub">Mỗi học sinh là một cây đang lớn lên từng ngày</div></div>
+            <button class="btn primary teacher-only" id="addStudentBtn">➕ Thêm học sinh</button>
           </div>
           <div class="toolbar">
             <input type="text" id="searchInput" placeholder="🔍 Tìm học sinh theo tên...">
@@ -210,7 +211,7 @@
           </div>
         </section>
 
-        <div class="footer-note">Vườn Ươm Hạnh Phúc · Lớp 10/5 · Trường THCS&THPT Hiển Nhân · GVCN: Trần Thị Nguyệt</div>
+        <div class="footer-note">Vườn Ươm Hạnh Phúc · Lớp 11B1 · Trường THCS&THPT Hiển Nhân · GVCN: Trần Thị Nguyệt</div>
       </main>
     </div>
   </div>
@@ -235,7 +236,7 @@
       <textarea id="pmNote" placeholder="Ví dụ: phát biểu tốt trong tiết Toán..."></textarea>
       <div class="modal-actions">
         <button class="btn outline" data-close="pointModal">Hủy</button>
-        <button class="btn primary" id="pmConfirmBtn">✓ Xác nhận</button>
+        <button class="btn primary teacher-only" id="pmConfirmBtn">✓ Xác nhận</button>
       </div>
     </div>
   </div>
@@ -279,6 +280,27 @@
       <h5 style="font-size:12px;color:var(--text-light);margin:10px 0 6px;">Nhận xét giáo viên</h5>
       <p id="svComment" style="font-size:13px;background:var(--primary-light);padding:10px;border-radius:10px;"></p>
       <div class="modal-actions"><button class="btn outline" data-close="summaryViewModal">Đóng</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM HỌC SINH -->
+  <div class="modal-overlay" id="addStudentModal">
+    <div class="modal-box">
+      <span class="close-x" data-close="addStudentModal">✕</span>
+      <h3>➕ Thêm học sinh mới</h3>
+      <div class="m-sub">Nhập họ và tên học sinh muốn thêm vào lớp</div>
+      <div style="margin:16px 0;">
+        <label style="font-size:13px;font-weight:600;">Họ và tên</label>
+        <input type="text" id="newStudentName" placeholder="VD: Nguyễn Văn A" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-top:6px;">
+      </div>
+      <div style="margin:16px 0;">
+        <label style="font-size:13px;font-weight:600;">Xếp vào tổ</label>
+        <select id="newStudentTeam" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-top:6px;"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn outline" data-close="addStudentModal">Hủy</button>
+        <button class="btn primary" id="confirmAddStudentBtn">✅ Thêm học sinh</button>
+      </div>
     </div>
   </div>
 

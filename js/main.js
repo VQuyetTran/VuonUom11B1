@@ -1,11 +1,9 @@
 // js/main.js
 document.addEventListener("DOMContentLoaded", function() {
-  // Khởi tạo các sự kiện đóng modal
   initModalCloseEvents();
-
-  // Khởi tạo tất cả sự kiện (nút, input, select...)
   initEvents();
-
-  // Render toàn bộ giao diện
   renderAll();
+
+  // Nếu cần lưu trạng thái đăng nhập (sessionStorage) thì thêm ở đây
+  // Ví dụ: if (sessionStorage.getItem("teacher") === "true") { isTeacherMode = true; updateUIByRole(); }
 });
