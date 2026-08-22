@@ -1,431 +1,453 @@
-// js/ui.js
-// Các hàm render giao diện và tiện ích UI (toast, modal, download...)
+// ui.js
+// Biến toàn cục cho role (quản lý bởi events.js)
+let isTeacher = false;
 
-// =========================================================
-// Toast
-// =========================================================
-function toast(msg, allowUndo) {
-  const wrap = document.getElementById("toast-wrap");
-  const el = document.createElement("div");
-  el.className = "toast";
-  el.innerHTML = "<span>" + msg + "</span>" + (allowUndo ? "<button data-undo='1'>HOÀN TÁC</button>" : "");
+// ---------- Toast ----------
+function toast(msg) {
+  const wrap = document.getElementById('toast-wrap') || (() => {
+    const w = document.createElement('div');
+    w.id = 'toast-wrap';
+    w.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px;';
+    document.body.appendChild(w);
+    return w;
+  })();
+  const el = document.createElement('div');
+  el.style.cssText = 'background:#243a2e;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.25);animation:slidein .25s ease;';
+  el.textContent = msg;
   wrap.appendChild(el);
-  if (allowUndo) {
-    el.querySelector("[data-undo]").addEventListener("click", () => { undoLast();
-      el.remove(); });
-  }
   setTimeout(() => {
-    el.style.opacity = "0";
-    el.style.transition = "opacity .3s";
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
     setTimeout(() => el.remove(), 300);
-  }, 4500);
+  }, 3000);
 }
 
-// =========================================================
-// Modal
-// =========================================================
-function openModal(id) { document.getElementById(id).classList.add("show"); }
-function closeModal(id) { document.getElementById(id).classList.remove("show"); }
-
-function initModalCloseEvents() {
-  document.querySelectorAll("[data-close]").forEach(b => {
-    b.addEventListener("click", () => closeModal(b.getAttribute("data-close")));
+// ---------- Update UI by role ----------
+function updateUIByRole() {
+  const status = document.getElementById('authStatus');
+  if (status) {
+    status.textContent = isTeacher ? '👩‍🏫 Giáo viên' : '👨‍🎓 Học sinh (xem)';
+    status.className = 'auth-status' + (isTeacher ? ' teacher' : '');
+  }
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) {
+    loginBtn.textContent = isTeacher ? '🔒 Đăng xuất' : '🔑 Đăng nhập GV';
+    loginBtn.className = isTeacher ? 'btn' : 'btn btn-primary';
+  }
+  document.querySelectorAll('.teacher-only').forEach(el => {
+    el.style.display = isTeacher ? '' : 'none';
   });
-  document.querySelectorAll(".modal-overlay").forEach(ov => {
-    ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("show"); });
+  document.querySelectorAll('.btn-record').forEach(el => {
+    if (!isTeacher) el.classList.add('disabled');
+    else el.classList.remove('disabled');
   });
 }
 
-// =========================================================
-// Download file
-// =========================================================
-function downloadFile(filename, content, mime) {
-  const blob = new Blob([content], { type: mime || "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url);
-    a.remove(); }, 200);
+// ---------- Render functions ----------
+function renderHeader() {
+  const c = state.classInfo;
+  document.getElementById('hdrClassName').textContent = 'VƯỜN ƯƠM ' + c.className;
+  document.getElementById('hdrYear').textContent = 'Năm học ' + c.schoolYear;
+  document.getElementById('teacherName').textContent = c.teacher;
+  document.getElementById('teacherInitials').textContent = initials(c.teacher).toUpperCase();
 }
 
-// =========================================================
-// Render: Stats Bar
-// =========================================================
-function renderStatsBar() {
-  const bar = document.getElementById("statsBar");
-  const students = DB.students;
-  const totalPoints = students.reduce((s, x) => s + x.points, 0);
-  const highLevelCount = students.filter(s => getLevel(s.points).threshold >= 150).length;
-  let leader = students.reduce((a, b) => (b.points > (a ? a.points : -1) ? b : a), null);
-  const teamTotals = teamAggregates();
-  let leadTeam = teamTotals.reduce((a, b) => (b.total > (a ? a.total : -1) ? b : a), null);
-  const wk = currentWeekNumber();
-  bar.innerHTML = [
-    chip(students.length, "Tổng số học sinh"),
-    chip(DB.numTeams, "Tổng số tổ"),
-    chip(totalPoints, "Tổng điểm cả lớp"),
-    chip(highLevelCount, "HS đạt cấp độ cao"),
-    chip(leader ? displayName(leader.name) : "—", "Học sinh dẫn đầu"),
-    chip(leadTeam ? "Tổ " + leadTeam.team : "—", "Tổ dẫn đầu"),
-    chip(wk > 0 ? "Tuần " + wk : "Chưa bắt đầu", "Tuần học hiện tại")
-  ].join("");
-}
-function chip(v, l) { return '<div class="stat-chip"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
-
-// =========================================================
-// Render: Sidebar Summary
-// =========================================================
 function renderSideSummary() {
   const wk = currentWeekNumber();
-  const box = document.getElementById("sideSummary");
   if (wk <= 0) {
-    box.innerHTML = '<div class="trophy">🏆</div><h4>Thi đua chưa bắt đầu</h4><div class="dates">Bắt đầu ngày ' + fmtDate(dateFromISO(DB.week1Start)) + '</div>';
+    document.getElementById('sideWeekTitle').textContent = 'Thi đua chưa bắt đầu';
+    document.getElementById('sideWeekDates').textContent = 'Bắt đầu ngày ' + fmtDate(state.classInfo.week1Start);
+    document.getElementById('sideProgressBar').style.width = '0%';
+    document.getElementById('sideDayOf').textContent = 'Ngày 0 / 7';
     return;
   }
   const r = weekRange(wk);
   const today = new Date();
   let dayOf = diffDays(new Date(today.getFullYear(), today.getMonth(), today.getDate()), r.start) + 1;
   dayOf = Math.max(1, Math.min(7, dayOf));
-  box.innerHTML =
-    '<div class="trophy">🏆</div><h4>Thi đua tuần ' + wk + '</h4>' +
-    '<div class="dates">' + fmtDate(r.start) + ' – ' + fmtDate(r.end) + '</div>' +
-    '<div class="progressline"><i style="width:' + (dayOf / 7 * 100) + '%"></i></div>' +
-    '<div class="dayof">Ngày ' + dayOf + ' / 7</div>';
+  document.getElementById('sideWeekTitle').textContent = 'Thi đua tuần ' + wk;
+  document.getElementById('sideWeekDates').textContent = fmtDate(isoOf(r.start)) + ' – ' + fmtDate(isoOf(r.end));
+  document.getElementById('sideProgressBar').style.width = (dayOf / 7 * 100) + '%';
+  document.getElementById('sideDayOf').textContent = 'Ngày ' + dayOf + ' / 7';
 }
 
-// =========================================================
-// Render: Garden (Khu vườn)
-// =========================================================
-function populateTeamFilterOptions() {
-  const sel = document.getElementById("filterTeam");
-  sel.innerHTML = '<option value="all">Tất cả các tổ</option>' +
-    Array.from({ length: DB.numTeams }, (_, i) => i + 1).map(t => '<option value="' + t + '">Tổ ' + t + '</option>').join("");
-  const selLog = document.getElementById("logFilterTeam");
-  selLog.innerHTML = '<option value="all">Tất cả các tổ</option>' +
-    Array.from({ length: DB.numTeams }, (_, i) => i + 1).map(t => '<option value="' + t + '">Tổ ' + t + '</option>').join("");
-  const selLogS = document.getElementById("logFilterStudent");
-  selLogS.innerHTML = '<option value="all">Tất cả học sinh</option>' +
-    DB.students.slice().sort((a, b) => a.name.localeCompare(b.name, 'vi')).map(s => '<option value="' + s.id + '">' + s.name + '</option>').join("");
-}
-
-function currentGardenList() {
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-  const teamF = document.getElementById("filterTeam").value;
-  const sortV = document.getElementById("sortSelect").value;
-  let list = DB.students.filter(s => {
-    const matchName = !q || s.name.toLowerCase().includes(q);
-    const matchTeam = teamF === "all" || s.team === Number(teamF);
-    return matchName && matchTeam;
-  });
-  if (sortV === "name") list.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-  else if (sortV === "points_desc") list.sort((a, b) => b.points - a.points);
-  else if (sortV === "points_asc") list.sort((a, b) => a.points - b.points);
-  else if (sortV === "team") list.sort((a, b) => a.team - b.team || a.name.localeCompare(b.name, 'vi'));
-  return list;
+function renderGardenStats() {
+  const ranked = rankedStudents();
+  const total = state.students.length;
+  const bloomed = ranked.filter(s => s.pts >= 90).length;
+  const totalPts = ranked.reduce((a, s) => a + s.pts, 0);
+  document.getElementById('gardenStats').innerHTML = `
+    <div class="stat-card"><div class="stat-ic a">🌱</div><div><div class="stat-label">Tổng số học sinh</div><div class="stat-value">${total}</div></div></div>
+    <div class="stat-card"><div class="stat-ic b">🌸</div><div><div class="stat-label">Tổng số tổ</div><div class="stat-value">${state.classInfo.numGroups}</div></div></div>
+    <div class="stat-card"><div class="stat-ic c">✦</div><div><div class="stat-label">Tổng điểm cả lớp</div><div class="stat-value">${totalPts}</div></div></div>
+    <div class="stat-card"><div class="stat-ic d">🏅</div><div><div class="stat-label">HS đạt cấp độ cao</div><div class="stat-value">${bloomed}</div></div></div>
+  `;
 }
 
 function renderGarden() {
-  const grid = document.getElementById("gardenGrid");
-  const list = currentGardenList();
-  const ranks = rankMapByPoints();
-  if (list.length === 0) {
-    grid.innerHTML = '<div class="empty-hint">Không tìm thấy học sinh phù hợp với bộ lọc hiện tại.</div>';
-    return;
-  }
-  grid.innerHTML = list.map(s => {
-    const lvl = getLevel(s.points);
-    const prog = levelProgress(s.points);
-    const badges = studentBadges(s);
-    return '<div class="s-card">' +
-      '<div class="rank-badge">#' + ranks[s.id] + '</div>' +
-      '<div class="team-tag" style="background:' + teamColor(s.team) + '">Tổ ' + s.team + '</div>' +
-      '<div class="plant">' + lvl.icon + '</div>' +
-      '<div class="sname">' + displayName(s.name) + '</div>' +
-      '<div class="level-name">' + lvl.name + '</div>' +
-      '<div class="points">' + s.points + ' <span>điểm</span></div>' +
-      '<div class="progressline"><i style="width:' + prog.pct + '%"></i></div>' +
-      '<div class="next-lvl">' + (prog.nextName ? "Còn " + prog.remain + " điểm đến cấp '" + prog.nextName + "'" : "Đã đạt cấp cao nhất") + '</div>' +
-      '<div class="badges-row">' + badges.map(b => '<span class="badge-ic" title="' + b.name + '">' + b.icon + '</span>').join("") + '</div>' +
-      '<div class="cardbtns">' +
-      '<button class="btn primary teacher-only" onclick="AppUI.openPoint(\'' + s.id + '\')">+ Ghi nhận điểm</button>' +
-      '<button class="btn outline" onclick="AppUI.openDetail(\'' + s.id + '\')">Chi tiết</button>' +
-      '</div>' +
-      '</div>';
-  }).join("");
-  updateUIByRole();
+  const q = document.getElementById('gardenSearch').value.trim().toLowerCase();
+  const filterGroup = document.getElementById('gardenGroupFilter').value;
+  let list = rankedStudents();
+  if (filterGroup) list = list.filter(s => s.group == filterGroup);
+  if (q) list = list.filter(s => s.name.toLowerCase().includes(q));
+  const grid = document.getElementById('studentGrid');
+  if (list.length === 0) { grid.innerHTML = '<div class="empty">Không tìm thấy học sinh.</div>'; return; }
+  grid.innerHTML = list.map((s, i) => {
+    const lvl = levelOf(s.pts);
+    const pct = lvl.next ? Math.min(100, Math.round((s.pts - (lvl.next - 40)) / 40 * 100)) : 100;
+    const toNext = lvl.next ? lvl.next - s.pts : 0;
+    return `
+    <div class="student-card">
+      <div class="rank">#${i+1}</div>
+      <div class="seed-emoji">${lvl.emoji}</div>
+      <div class="group-badge">Tổ ${s.group}</div>
+      <div class="student-name">${s.name}</div>
+      <div class="student-sub">Chạm để xem hồ sơ</div>
+      <div class="student-points ${s.pts <= 0 ? 'zero' : ''}">${s.pts} <span style="font-size:11px;font-weight:600;color:var(--muted);">điểm</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="progress-caption">${lvl.next ? 'Còn '+toNext+' điểm đến cấp tiếp theo' : 'Đã đạt cấp cao nhất'}</div>
+      <button class="btn-record ${isTeacher ? '' : 'disabled'}" onclick="openRecord('${s.id}')">+ Ghi nhận điểm</button>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#studentGrid .student-card').forEach((card, idx) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-record')) return;
+      const sid = list[idx].id;
+      openProfile(sid);
+    });
+    card.style.cursor = 'pointer';
+  });
 }
 
-// =========================================================
-// Render: Teams
-// =========================================================
-function renderTeams() {
-  const teamGrid = document.getElementById("teamSummaryGrid");
-  const agg = teamAggregates();
-  teamGrid.innerHTML = agg.map(t => {
-    return '<div class="team-card" style="border-top-color:' + teamColor(t.team) + '">' +
-      '<h3>Tổ ' + t.team + '</h3>' +
-      '<div class="cnt">Sĩ số: ' + t.members.length + ' học sinh</div>' +
-      '<div class="tp">' + t.total + ' điểm</div>' +
-      '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Trung bình: ' + t.avg + ' điểm/HS</div>' +
-      '</div>';
-  }).join("");
-
-  const body = document.getElementById("rosterBody");
-  const list = DB.students.slice().sort((a, b) => a.team - b.team || a.name.localeCompare(b.name, 'vi'));
-  body.innerHTML = list.map((s, idx) => {
-    let options = "";
-    for (let t = 1; t <= DB.numTeams; t++) { options += '<option value="' + t + '" ' + (t === s.team ? "selected" : "") + '>Tổ ' + t + '</option>'; }
-    return '<tr><td>' + (idx + 1) + '</td><td>' + s.name + '</td><td>Tổ ' + s.team + '</td><td>' + s.points + '</td>' +
-      '<td><select class="team-select teacher-only" onchange="AppUI.doTransfer(\'' + s.id + '\', this.value)">' + options + '</select></td></tr>';
-  }).join("");
-  updateUIByRole();
+function renderStudents() {
+  const body = document.getElementById('studentsTableBody');
+  body.innerHTML = state.students.map((s, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><b>${s.name}</b></td>
+      <td>
+        <select ${isTeacher ? '' : 'disabled'} onchange="changeGroup('${s.id}', this.value)" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12.5px;">
+          ${Array.from({length: state.classInfo.numGroups}, (_, g) => g+1).map(g => `<option value="${g}" ${g == s.group ? 'selected' : ''}>Tổ ${g}</option>`).join('')}
+        </select>
+      </td>
+      <td>${fmtDate(s.joinDate)}</td>
+      <td>
+        ${isTeacher ? `<button class="btn btn-sm btn-danger" onclick="if(confirm('Xóa học sinh này?')) removeStudent('${s.id}')">Xoá</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+  const groups = [...new Set(state.students.map(s => s.group))].sort((a,b) => a-b);
+  document.getElementById('groupCountGrid').innerHTML = groups.map(g => {
+    const mem = groupMembers(g);
+    const total = mem.reduce((sum, s) => sum + studentTotalPoints(s.id), 0);
+    return `<div class="rank-card"><div class="rank-group">Tổ ${g}</div><div class="rank-points">${mem.length}</div><div class="rank-meta">thành viên · ${total} điểm</div></div>`;
+  }).join('');
 }
 
-// =========================================================
-// Render: Ranking
-// =========================================================
-let currentRankTab = "personal";
+function renderOfficers() {
+  const body = document.getElementById('officersTableBody');
+  body.innerHTML = state.officers.map(o => `
+    <tr>
+      <td><b>${o.role}</b></td>
+      <td>
+        <select ${isTeacher ? '' : 'disabled'} onchange="setOfficer('${o.id}', this.value)" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12.5px;min-width:200px;">
+          <option value="">— Chưa phân công —</option>
+          ${state.students.map(s => `<option value="${s.id}" ${s.id === o.studentId ? 'selected' : ''}>${s.name} (Tổ ${s.group})</option>`).join('')}
+        </select>
+      </td>
+      <td class="hint">Hoàn thành: +20 điểm · Sai: −40 điểm</td>
+      <td class="teacher-only" style="display:none;">${isTeacher ? `<button class="btn btn-sm btn-danger" onclick="removeOfficerRole('${o.id}')">Xoá</button>` : ''}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" class="empty">Chưa có chức vụ.</td></tr>';
+}
+
+function renderAttendance() {
+  const dateInput = document.getElementById('attDate');
+  if (!dateInput.value) dateInput.value = todayISO();
+  const dateStr = dateInput.value;
+  if (!state.attendance[dateStr]) state.attendance[dateStr] = {};
+  state.students.forEach(s => {
+    if (!state.attendance[dateStr][s.id]) state.attendance[dateStr][s.id] = { morning: '', afternoon: '' };
+  });
+  const day = state.attendance[dateStr];
+  let sangCoMat = 0, sangTreVang = 0, chieuCoMat = 0, chieuTreVang = 0;
+  state.students.forEach(s => {
+    const m = day[s.id].morning;
+    const a = day[s.id].afternoon;
+    if (m === 'present') sangCoMat++; else if (m) sangTreVang++;
+    if (a === 'present') chieuCoMat++; else if (a) chieuTreVang++;
+  });
+  sangTreVang = state.students.length - sangCoMat;
+  chieuTreVang = state.students.length - chieuCoMat;
+
+  document.getElementById('attStats').innerHTML = `
+    <div class="stat-card"><div class="stat-ic a">👥</div><div><div class="stat-label">Sĩ số</div><div class="stat-value">${state.students.length}</div></div></div>
+    <div class="stat-card"><div class="stat-ic a">☀️</div><div><div class="stat-label">Sáng có mặt</div><div class="stat-value">${sangCoMat}</div></div></div>
+    <div class="stat-card"><div class="stat-ic b">☀️</div><div><div class="stat-label">Sáng trễ/vắng</div><div class="stat-value">${sangTreVang}</div></div></div>
+    <div class="stat-card"><div class="stat-ic c">🌙</div><div><div class="stat-label">Chiều có mặt</div><div class="stat-value">${chieuCoMat}</div></div></div>
+    <div class="stat-card"><div class="stat-ic d">🌙</div><div><div class="stat-label">Chiều trễ/vắng</div><div class="stat-value">${chieuTreVang}</div></div></div>
+  `;
+  const statusMap = { present: '✓ Có mặt', late: '⏱ Đi trễ', excused: '○ Vắng CP', absent: '! Vắng KP', '': '—' };
+  const listEl = document.getElementById('attList');
+  listEl.innerHTML = state.students.map((s, i) => {
+    const rec = day[s.id];
+    const morningVal = rec.morning || '';
+    const afternoonVal = rec.afternoon || '';
+    const morningBtns = ['present','late','excused','absent'].map(v =>
+      `<button class="att-btn ${v} ${morningVal === v ? 'on' : ''}" ${isTeacher ? `onclick="setAtt('${dateStr}','${s.id}','morning','${v}')"` : 'disabled'} style="${!isTeacher ? 'opacity:0.6;cursor:not-allowed;' : ''}">${statusMap[v]}</button>`
+    ).join('');
+    const afternoonBtns = ['present','late','excused','absent'].map(v =>
+      `<button class="att-btn ${v} ${afternoonVal === v ? 'on' : ''}" ${isTeacher ? `onclick="setAtt('${dateStr}','${s.id}','afternoon','${v}')"` : 'disabled'} style="${!isTeacher ? 'opacity:0.6;cursor:not-allowed;' : ''}">${statusMap[v]}</button>`
+    ).join('');
+    return `<div class="att-row">
+      <div>
+        <div class="att-name">${i+1}. ${s.name} · Tổ ${s.group}</div>
+        <div class="att-label">☀️ Buổi sáng</div>
+        <div class="att-buttons">${morningBtns}</div>
+        <input class="att-note" placeholder="Ghi chú..." value="${rec.morningNote||''}" ${isTeacher ? `onchange="setAttNote('${dateStr}','${s.id}','morningNote', this.value)"` : 'disabled'} style="${!isTeacher ? 'opacity:0.6;' : ''}">
+      </div>
+      <div>
+        <div class="att-label">🌙 Buổi chiều</div>
+        <div class="att-buttons">${afternoonBtns}</div>
+        <input class="att-note" placeholder="Ghi chú..." value="${rec.afternoonNote||''}" ${isTeacher ? `onchange="setAttNote('${dateStr}','${s.id}','afternoonNote', this.value)"` : 'disabled'} style="${!isTeacher ? 'opacity:0.6;' : ''}">
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function renderRanking() {
-  const ranks = rankMapByPoints();
-  const tbody = document.querySelector("#rankPersonalTable tbody");
-  if (DB.students.every(s => s.points === 0)) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">Lớp chưa phát sinh điểm nào.</td></tr>';
-  } else {
-    const sorted = DB.students.slice().sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'vi'));
-    tbody.innerHTML = sorted.map(s => {
-      const lvl = getLevel(s.points);
-      const badges = studentBadges(s);
-      const r = ranks[s.id];
-      const medal = r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : "";
-      return '<tr><td>' + medal + ' #' + r + '</td><td>' + displayName(s.name) + '</td><td>Tổ ' + s.team + '</td><td><b>' + s.points + '</b></td>' +
-        '<td>' + lvl.icon + ' ' + lvl.name + '</td><td>' + badges.map(b => b.icon).join(" ") + '</td></tr>';
-    }).join("");
-  }
-
-  const agg = teamAggregates();
-  const sortedTeams = agg.slice().sort((a, b) => b.total - a.total);
-  let rank = 0,
-    prev = null,
-    seen = 0;
-  const teamRanks = {};
-  sortedTeams.forEach(t => { seen++; if (t.total !== prev) { rank = seen;
-      prev = t.total; }
-    teamRanks[t.team] = rank; });
-  const teamBody = document.getElementById("rankTeamBody");
-  teamBody.innerHTML = sortedTeams.map(t => {
-    if (t.members.length === 0) {
-      return '<tr><td>—</td><td>Tổ ' + t.team + '</td><td>0</td><td>0</td><td>0</td><td style="color:var(--text-light);">Tổ chưa có thành viên</td></tr>';
-    }
-    const top = t.members.slice().sort((a, b) => b.points - a.points)[0];
-    const r = teamRanks[t.team];
-    const medal = r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : "";
-    return '<tr><td>' + medal + ' #' + r + '</td><td>Tổ ' + t.team + '</td><td>' + t.members.length + '</td><td><b>' + t.total + '</b></td><td>' + t.avg + '</td><td>' + displayName(top.name) + '</td></tr>';
-  }).join("");
-
-  document.getElementById("rankPersonalTable").parentElement.style.display = currentRankTab === "personal" ? "block" : "none";
-  document.getElementById("rankTeamWrap").style.display = currentRankTab === "team" ? "block" : "none";
+  const rg = rankedGroups();
+  const medals = ['🥇','🥈','🥉','🌿'];
+  document.getElementById('rankGroupGrid').innerHTML = rg.map((g, i) => {
+    const avg = g.count ? Math.round(g.total / g.count) : 0;
+    return `<div class="rank-card ${i===0?'first':''}">
+      <div class="medal">${medals[i]||'🌿'}</div>
+      <div class="rank-group">Tổ ${g.group}</div>
+      <div class="rank-points">${g.total} điểm</div>
+      <div class="rank-meta">${g.count} thành viên · TB ${avg} điểm</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${rg[0].total ? Math.round(g.total/rg[0].total*100) : 0}%;"></div></div>
+    </div>`;
+  }).join('');
+  const rs = rankedStudents().slice(0,10);
+  document.getElementById('rankStudentList').innerHTML = rs.map((s, i) => `
+    <div class="list-row">
+      <div class="list-left"><span class="list-num">${i+1}</span> ${levelOf(s.pts).emoji} <b>${s.name}</b></div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span class="hint" style="margin:0;">Tổ ${s.group}</span>
+        <b style="color:${s.pts > 0 ? 'var(--primary-dark)' : 'var(--text)'}">${s.pts} điểm</b>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">Chưa có dữ liệu.</div>';
 }
 
-// =========================================================
-// Render: Rules
-// =========================================================
 function renderRules() {
-  const map = { daily: "rules-daily", achieve: "rules-achieve", special: "rules-special", minor: "rules-minor", medium: "rules-medium", serious: "rules-serious" };
-  Object.keys(map).forEach(g => {
-    const el = document.getElementById(map[g]);
-    const rules = POINT_RULES.filter(r => r.group === g);
-    el.innerHTML = rules.map(r => {
-      const cls = r.points > 0 ? "plus" : "minus";
-      return '<div class="rule-row"><span>' + r.label + '</span><span class="rule-pts ' + cls + '">' + (r.points > 0 ? "+" : "") + r.points + '</span></div>';
-    }).join("");
-  });
-  const bList = document.getElementById("badgeConfigList");
-  bList.innerHTML = BADGE_CONFIG.map(b => {
-    return '<div class="rule-row"><span>' + b.icon + ' <b>' + b.name + '</b> — ' + b.desc + '</span></div>';
-  }).join("");
+  const groups = [
+    { key: 'study', title: '✅ Điểm cộng từ kết quả học tập', cls: 'pos' },
+    { key: 'class', title: '✋ Điểm cộng trong giờ học', cls: 'pos' },
+    { key: 'special', title: '🌟 Điểm cộng đặc biệt', cls: 'pos' },
+    { key: 'deduct', title: '⚠ Điểm trừ – nhắc nhở', cls: 'deduct' }
+  ];
+  const container = document.getElementById('rulesContainer');
+  container.innerHTML = groups.map(g => {
+    const rules = state.rules.filter(r => r.group === g.key);
+    return `<div class="rule-group-title"><span class="cb">✓</span> ${g.title}</div>
+      <div class="rule-grid">${rules.map(r => `
+        <div class="rule-card ${g.cls}">
+          <div class="rule-left">
+            <div class="rule-ic">${r.icon}</div>
+            <div>
+              <div class="rule-text">${r.text}</div>
+              <div class="rule-desc">${r.desc || ''}</div>
+              ${isTeacher ? `<div class="rule-btns" style="margin-top:8px;">
+                <button class="btn btn-sm" onclick="openRuleModal('${r.id}')">Sửa</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteRule('${r.id}')">Xoá</button>
+              </div>` : ''}
+            </div>
+          </div>
+          <div class="rule-actions"><div class="rule-points ${r.points < 0 ? 'neg' : 'pos'}">${r.teacherInput ? 'GV tự nhập' : (r.points > 0 ? '+' : '') + r.points}</div></div>
+        </div>`).join('') || '<div class="empty">Chưa có quy định.</div>'}
+      </div>`;
+  }).join('');
 }
 
-// =========================================================
-// Render: Log
-// =========================================================
 function renderLog() {
-  const stF = document.getElementById("logFilterStudent").value;
-  const teamF = document.getElementById("logFilterTeam").value;
-  const typeF = document.getElementById("logFilterType").value;
-  const from = document.getElementById("logFilterFrom").value;
-  const to = document.getElementById("logFilterTo").value;
-  const order = document.getElementById("logSortOrder").value;
-
-  let list = DB.logs.filter(l => {
-    if (stF !== "all" && l.studentId !== stF) return false;
-    if (teamF !== "all" && String(l.team) !== teamF) return false;
-    if (typeF !== "all" && l.type !== typeF) return false;
-    if (from && l.dateISO < from) return false;
-    if (to && l.dateISO > to) return false;
-    return true;
-  });
-  list = list.slice();
-  if (order === "asc") list.reverse();
-
-  const listEl = document.getElementById("logList");
-  if (list.length === 0) {
-    listEl.innerHTML = '<div class="empty-hint">Không có sự kiện nào phù hợp.</div>';
-    return;
-  }
-  listEl.innerHTML = list.map(l => {
-    const typeLabel = l.type === "plus" ? "CỘNG ĐIỂM" : l.type === "minus" ? "TRỪ ĐIỂM" : l.type === "transfer" ? "CHUYỂN TỔ" : "TỔNG KẾT";
-    const ptsCls = l.points > 0 ? "plus" : l.points < 0 ? "minus" : "";
-    const undoBtn = (l.type === "plus" || l.type === "minus" || (l.type === "transfer" && l.oldTeam)) ?
-      '<button class="btn small outline teacher-only" style="margin-top:6px;" onclick="AppUI.undoOne(\'' + l.id + '\')">↺ Hoàn tác</button>' : "";
-    return '<div class="log-item"><div class="l-left">' +
-      '<span class="log-tag">' + typeLabel + '</span><span class="l-name">' + (l.studentName || "—") + '</span>' +
-      (l.team ? ' <span style="color:var(--text-light);font-size:11px;">(Tổ ' + l.team + ')</span>' : '') +
-      '<div class="l-meta">' + l.content + (l.note ? " — " + l.note : "") + '</div>' +
-      undoBtn +
-      '</div><div class="l-right">' + (l.points !== 0 ? '<div class="l-pts ' + ptsCls + '">' + (l.points > 0 ? "+" : "") + l.points + '</div>' : '') +
-      '<div class="l-time">' + l.time + ' · ' + l.actor + '</div></div></div>';
-  }).join("");
-  updateUIByRole();
+  const items = [...state.logs].sort((a,b) => (b.ts||0) - (a.ts||0));
+  document.getElementById('logList').innerHTML = items.map(l => {
+    const s = state.students.find(x => x.id === l.studentId);
+    return `<div class="log-item">
+      <div class="log-dot ${l.points < 0 ? 'neg' : ''}"></div>
+      <div class="log-main">
+        <b>${s ? s.name : '—'}</b> — ${l.ruleText || l.content} <b style="color:${l.points < 0 ? 'var(--red)' : 'var(--primary-dark)'}">${l.points > 0 ? '+' : ''}${l.points}</b>
+        <div class="log-time">${fmtDate(l.date)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Chưa có hoạt động.</div>';
 }
 
-// =========================================================
-// Render: Time & Summary
-// =========================================================
-let currentPeriodType = "week";
-let currentPeriodData = null;
-
-function renderTimeView() {
+function renderSummary() {
   const wk = currentWeekNumber();
-  document.getElementById("currentWeekLabel").textContent = wk > 0 ?
-    "Hiện đang ở Tuần " + wk + " (" + fmtDate(weekRange(wk).start) + " – " + fmtDate(weekRange(wk).end) + ")" :
-    "Chưa bắt đầu — Tuần 1 khởi động ngày " + fmtDate(dateFromISO(DB.week1Start));
-  renderPeriodSelectBox();
-  renderSavedSummaries();
-}
+  document.getElementById('summaryCurrentWeek').textContent = 'Tuần ' + (wk || '—');
+  document.getElementById('summaryToday').textContent = fmtDate(todayISO());
+  document.getElementById('summaryWeekInfo').textContent = 'Tuần 1: ' + fmtDate(state.classInfo.week1Start) + ' · Tuần 2: ' + fmtDate(state.classInfo.week2Start);
 
-function renderPeriodSelectBox() {
-  const box = document.getElementById("periodSelectBox");
-  if (currentPeriodType === "week") {
-    const wk = currentWeekNumber();
-    const maxWeek = Math.max(wk, 35, 1);
-    let opts = "";
-    for (let i = 1; i <= maxWeek; i++) { opts += '<option value="' + i + '" ' + (i === wk ? "selected" : "") + '>Tuần ' + i + '</option>'; }
-    box.innerHTML = '<label style="font-size:12px;color:var(--text-light);">Chọn tuần</label><br>' +
-      '<select id="weekSelect" style="margin-top:6px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;">' + opts + '</select> ' +
-      '<button class="btn primary" id="loadPeriodBtn" style="margin-left:8px;">Xem thống kê</button>';
-  } else if (currentPeriodType === "month") {
-    const now = new Date();
-    const val = now.getFullYear() + "-" + pad(now.getMonth() + 1);
-    box.innerHTML = '<label style="font-size:12px;color:var(--text-light);">Chọn tháng</label><br>' +
-      '<input type="month" id="monthSelect" value="' + val + '" style="margin-top:6px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;"> ' +
-      '<button class="btn primary" id="loadPeriodBtn" style="margin-left:8px;">Xem thống kê</button>';
-  } else {
-    box.innerHTML = '<label style="font-size:12px;color:var(--text-light);">Chọn học kì</label><br>' +
-      '<select id="semSelect" style="margin-top:6px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;">' +
-      '<option value="hk1">' + SEMESTERS.hk1.label + ' (Tuần ' + SEMESTERS.hk1.start + '–' + SEMESTERS.hk1.end + ')</option>' +
-      '<option value="hk2">' + SEMESTERS.hk2.label + ' (Tuần ' + SEMESTERS.hk2.start + '–' + SEMESTERS.hk2.end + ')</option>' +
-      '</select> <button class="btn primary" id="loadPeriodBtn" style="margin-left:8px;">Xem thống kê</button>';
+  const sel = document.getElementById('summaryWeekSelect');
+  const totalWeeks = state.classInfo.totalWeeks || 38;
+  let opts = '';
+  for (let i = 1; i <= totalWeeks; i++) {
+    const r = weekRange(i);
+    if (r.start && r.end) {
+      opts += `<option value="${i}" ${i === wk ? 'selected' : ''}>Tuần ${i} - ${fmtDate(isoOf(r.start))} – ${fmtDate(isoOf(r.end))}</option>`;
+    }
   }
-  document.getElementById("loadPeriodBtn").addEventListener("click", loadPeriodStats);
-  document.getElementById("periodStatsBox").style.display = "none";
+  sel.innerHTML = opts || '<option value="">Chưa có dữ liệu</option>';
+
+  const chosenWk = parseInt(sel.value) || wk || 1;
+  const range = weekRange(chosenWk);
+  const fromISO = isoOf(range.start);
+  const toISO = isoOf(range.end);
+  const logs = state.logs.filter(l => l.date >= fromISO && l.date <= toISO);
+  const plus = logs.filter(l => l.points > 0).reduce((a,b) => a + b.points, 0);
+  const minus = logs.filter(l => l.points < 0).reduce((a,b) => a + b.points, 0);
+  const net = plus + minus;
+  document.getElementById('summaryStats').innerHTML = `
+    <div class="stat-card"><div class="stat-ic a">📝</div><div><div class="stat-label">Lượt ghi nhận</div><div class="stat-value">${logs.length}</div></div></div>
+    <div class="stat-card"><div class="stat-ic a">＋</div><div><div class="stat-label">Điểm cộng</div><div class="stat-value" style="color:var(--primary-dark)">+${plus}</div></div></div>
+    <div class="stat-card"><div class="stat-ic d">－</div><div><div class="stat-label">Điểm trừ</div><div class="stat-value" style="color:var(--red)">${minus}</div></div></div>
+    <div class="stat-card"><div class="stat-ic c">Σ</div><div><div class="stat-label">Điểm ròng</div><div class="stat-value">${net}</div></div></div>
+  `;
+
+  const perStudent = state.students.map(s => {
+    const pts = logs.filter(l => l.studentId === s.id).reduce((a,b) => a + b.points, 0);
+    return { ...s, pts };
+  }).sort((a,b) => b.pts - a.pts);
+  const hasData = perStudent.some(s => s.pts !== 0);
+  document.getElementById('summaryStudentRank').innerHTML = hasData ? perStudent.slice(0,10).map((s, i) =>
+    `<div class="list-row"><div class="list-left"><span class="list-num">${i+1}</span><b>${s.name}</b></div><b>${s.pts} điểm</b></div>`
+  ).join('') : '<div class="empty">Chưa có dữ liệu điểm trong khoảng thời gian này.</div>';
+
+  const groups = [...new Set(state.students.map(s => s.group))].sort((a,b) => a-b);
+  const groupTotals = groups.map(g => ({
+    group: g,
+    total: state.students.filter(s => s.group === g).reduce((sum, s) => sum + (perStudent.find(x => x.id === s.id)?.pts || 0), 0)
+  })).sort((a,b) => b.total - a.total);
+  document.getElementById('summaryGroupRank').innerHTML = groupTotals.map((gt, i) =>
+    `<div class="list-row"><div class="list-left"><span class="list-num">${i+1}</span>Tổ ${gt.group}</div><b>${gt.total}</b></div>`
+  ).join('') || '<div class="empty">Chưa có dữ liệu.</div>';
 }
 
-function loadPeriodStats() {
-  let fromISO, toISO, label;
-  if (currentPeriodType === "week") {
-    const wk = Number(document.getElementById("weekSelect").value);
-    const r = weekRange(wk);
-    fromISO = isoOf(r.start);
-    toISO = isoOf(r.end);
-    label = "Tuần " + wk + " (" + fmtDate(r.start) + " – " + fmtDate(r.end) + ")";
-  } else if (currentPeriodType === "month") {
-    const v = document.getElementById("monthSelect").value;
-    const [y, m] = v.split("-").map(Number);
-    const first = new Date(y, m - 1, 1),
-      last = new Date(y, m, 0);
-    fromISO = isoOf(first);
-    toISO = isoOf(last);
-    label = "Tháng " + m + "/" + y;
-  } else {
-    const sem = document.getElementById("semSelect").value;
-    const s = SEMESTERS[sem];
-    const r1 = weekRange(s.start),
-      r2 = weekRange(s.end);
-    fromISO = isoOf(r1.start);
-    toISO = isoOf(r2.end);
-    label = s.label + " (Tuần " + s.start + "–" + s.end + ")";
-  }
-  const logs = logsInRange(fromISO, toISO).filter(l => l.type === "plus" || l.type === "minus" || l.type === "transfer");
-  const plusLogs = logs.filter(l => l.type === "plus");
-  const minusLogs = logs.filter(l => l.type === "minus");
-  const totalPlus = plusLogs.reduce((s, l) => s + l.points, 0);
-  const totalMinus = minusLogs.reduce((s, l) => s + l.points, 0);
-  const net = totalPlus + totalMinus;
-
-  const studentNet = DB.students.map(s => {
-    const n = logs.filter(l => l.studentId === s.id && (l.type === "plus" || l.type === "minus")).reduce((sum, l) => sum + l.points, 0);
-    return { id: s.id, name: s.name, team: s.team, net: n };
-  }).sort((a, b) => b.net - a.net);
-
-  const teamNet = [];
-  for (let t = 1; t <= DB.numTeams; t++) {
-    const n = logs.filter(l => l.team === t && (l.type === "plus" || l.type === "minus")).reduce((sum, l) => sum + l.points, 0);
-    teamNet.push({ team: t, net: n });
-  }
-  teamNet.sort((a, b) => b.net - a.net);
-
-  currentPeriodData = { type: currentPeriodType, label, fromISO, toISO, totalLogs: logs.length, totalPlus, totalMinus, net, studentNet, teamNet };
-
-  document.getElementById("periodMiniStats").innerHTML =
-    miniStat(logs.length, "Tổng lượt ghi nhận") +
-    miniStat("+" + totalPlus, "Tổng điểm cộng") +
-    miniStat(totalMinus, "Tổng điểm trừ") +
-    miniStat(net, "Điểm ròng");
-
-  document.getElementById("periodStudentRank").innerHTML = studentNet.slice(0, 15).map((s, i) =>
-    '<tr><td>#' + (i + 1) + '</td><td>' + displayName(s.name) + '</td><td>Tổ ' + s.team + '</td><td>' + s.net + '</td></tr>').join("") ||
-    '<tr><td colspan="4" style="text-align:center;color:var(--text-light);">Không có dữ liệu trong khoảng thời gian này.</td></tr>';
-
-  document.getElementById("periodTeamRank").innerHTML = teamNet.map((t, i) =>
-    '<tr><td>#' + (i + 1) + '</td><td>Tổ ' + t.team + '</td><td>' + t.net + '</td></tr>').join("");
-
-  document.getElementById("periodStatsBox").style.display = "block";
+function renderSettings() {
+  const c = state.classInfo;
+  document.getElementById('setSchool').value = c.school;
+  document.getElementById('setClassName').value = c.className;
+  document.getElementById('setTeacher').value = c.teacher;
+  document.getElementById('setYear').value = c.schoolYear;
+  document.getElementById('setWeek1').value = c.week1Start;
+  document.getElementById('setWeek2').value = c.week2Start;
+  document.getElementById('setTotalWeeks').value = c.totalWeeks;
+  document.getElementById('setHk1Weeks').value = c.hk1Weeks;
+  document.getElementById('setNumGroups').value = c.numGroups;
+  document.getElementById('quickList').value = state.students.map(s => s.name).join('\n');
 }
 
-function miniStat(v, l) { return '<div><b>' + v + '</b><span>' + l + '</span></div>'; }
-
-function renderSavedSummaries() {
-  const box = document.getElementById("savedSummariesList");
-  if (DB.summaries.length === 0) { box.innerHTML = '<div class="empty-hint">Chưa có bản tổng kết nào được lưu.</div>'; return; }
-  box.innerHTML = DB.summaries.map(s => {
-    return '<div class="saved-summary"><div><b>' + s.label + '</b><div style="font-size:11px;color:var(--text-light);">Lập ngày ' + s.createdAt + ' bởi ' + s.author + '</div></div>' +
-      '<div style="display:flex;gap:6px;">' +
-      '<button class="btn small outline" onclick="AppUI.viewSummary(\'' + s.id + '\')">Xem lại</button>' +
-      '<button class="btn small danger teacher-only" onclick="AppUI.deleteSummary(\'' + s.id + '\')">Xóa</button>' +
-      '</div></div>';
-  }).join("");
-  updateUIByRole();
-}
-
-// =========================================================
-// Render All
-// =========================================================
 function renderAll() {
-  populateTeamFilterOptions();
-  renderStatsBar();
+  renderHeader();
   renderSideSummary();
+  renderGardenStats();
   renderGarden();
-  renderTeams();
+  renderStudents();
+  renderOfficers();
+  renderAttendance();
   renderRanking();
   renderRules();
   renderLog();
-  renderTimeView();
-  document.getElementById("dataVersionInfo").textContent =
-    "Phiên bản dữ liệu: v" + DB.version + " · Tổng số sự kiện nhật ký: " + DB.logs.length + " · Bản tổng kết đã lưu: " + DB.summaries.length;
-  document.getElementById("presentModeBtn").textContent = DB.presentMode ? "🎭 Đang trình chiếu (bật)" : "🎭 Chế độ trình chiếu";
+  renderSummary();
+  renderSettings();
   updateUIByRole();
 }
+
+// ---------- Modal functions ----------
+let recordStudentId = null;
+function openRecord(sid) {
+  if (!isTeacher) { toast('⚠️ Vui lòng đăng nhập với quyền giáo viên.'); return; }
+  recordStudentId = sid;
+  const s = state.students.find(x => x.id === sid);
+  document.getElementById('recordName').textContent = s.name;
+  const sel = document.getElementById('recordRuleSelect');
+  sel.innerHTML = state.rules.map(r => `<option value="${r.id}">${r.text} (${r.teacherInput ? 'GV tự nhập' : (r.points > 0 ? '+' : '') + r.points})</option>`).join('');
+  toggleCustomWrap();
+  document.getElementById('recordOverlay').classList.add('show');
+}
+function closeRecord() { document.getElementById('recordOverlay').classList.remove('show'); }
+
+function toggleCustomWrap() {
+  const rid = document.getElementById('recordRuleSelect').value;
+  const r = state.rules.find(x => x.id === rid);
+  document.getElementById('recordCustomWrap').style.display = (r && r.teacherInput) ? 'flex' : 'none';
+}
+
+let profileStudentId = null;
+function openProfile(sid) {
+  profileStudentId = sid;
+  const s = state.students.find(x => x.id === sid);
+  if (!s) return;
+  const pts = studentTotalPoints(s.id);
+  const lvl = levelOf(pts);
+  document.getElementById('profileName').textContent = s.name;
+  document.getElementById('profileGroup').textContent = 'Tổ '+s.group;
+  document.getElementById('profileLevel').textContent = lvl.emoji + ' ' + lvl.name;
+  const logs = state.logs.filter(l => l.studentId === sid && l.date >= state.classInfo.week1Start);
+  const plus = logs.filter(l => l.points > 0).reduce((a,b) => a+b.points, 0);
+  const minus = logs.filter(l => l.points < 0).reduce((a,b) => a+b.points, 0);
+  const attDates = Object.keys(state.attendance).filter(d => d >= state.classInfo.week1Start);
+  let present = 0;
+  attDates.forEach(d => {
+    const r = state.attendance[d][sid];
+    if (r && r.morning === 'present' && r.afternoon === 'present') present++;
+  });
+  const rank = rankedStudents().findIndex(x => x.id === sid) + 1;
+  document.getElementById('pStatPlus').textContent = '+' + plus;
+  document.getElementById('pStatMinus').textContent = minus;
+  document.getElementById('pStatNet').textContent = plus + minus;
+  document.getElementById('pStatAtt').textContent = present + '/' + attDates.length;
+  document.getElementById('pStatRank').textContent = '#' + rank + '/' + state.students.length;
+  document.getElementById('profilePlusList').innerHTML = plus ? logs.filter(l => l.points > 0).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--primary-dark)">+${l.points}</b></div>`).join('') : '<div class="empty">Không có</div>';
+  document.getElementById('profileMinusList').innerHTML = minus ? logs.filter(l => l.points < 0).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--red)">${l.points}</b></div>`).join('') : '<div class="empty">Không có</div>';
+  const attRows = attDates.sort().map(d => {
+    const r = state.attendance[d][sid];
+    const label = v => v === 'present' ? '✅ Có mặt' : v === 'late' ? '⏰ Đi trễ' : v === 'excused' ? '📝 Vắng CP' : v === 'absent' ? '❌ Vắng KP' : '—';
+    return `<tr><td>${fmtDate(d)}</td><td>${label(r ? r.morning : '')}</td><td>${label(r ? r.afternoon : '')}</td></tr>`;
+  }).join('');
+  document.getElementById('profileAttTable').innerHTML = attRows || '<tr><td colspan="3" class="empty">Chưa có dữ liệu</td></tr>';
+  document.getElementById('profileOverlay').classList.add('show');
+}
+function closeProfile() { document.getElementById('profileOverlay').classList.remove('show'); }
+
+let editingRuleId = null;
+function openRuleModal(id) {
+  if (!isTeacher) return;
+  editingRuleId = id || null;
+  const r = id ? state.rules.find(x => x.id === id) : null;
+  document.getElementById('ruleModalTitle').textContent = id ? 'Sửa quy định' : 'Thêm quy định mới';
+  document.getElementById('ruleIcon').value = r ? r.icon : '⭐';
+  document.getElementById('ruleGroupSel').value = r ? r.group : 'study';
+  document.getElementById('ruleContent').value = r ? r.text : '';
+  document.getElementById('rulePoints').value = r ? r.points : 1;
+  document.getElementById('ruleTeacherInput').checked = r ? r.teacherInput : false;
+  document.getElementById('ruleDesc').value = r ? r.desc : '';
+  document.getElementById('ruleOverlay').classList.add('show');
+}
+function closeRuleModal() { document.getElementById('ruleOverlay').classList.remove('show'); }
+
+function openStudentModal() {
+  const n = state.classInfo.numGroups || 4;
+  document.getElementById('newStudentGroup').innerHTML = Array.from({length:n}, (_,i) => i+1).map(g => `<option value="${g}">Tổ ${g}</option>`).join('');
+  document.getElementById('newStudentName').value = '';
+  document.getElementById('studentOverlay').classList.add('show');
+}
+function closeStudentModal() { document.getElementById('studentOverlay').classList.remove('show'); }
+
+function openOfficerRoleModal() {
+  document.getElementById('newOfficerRole').value = '';
+  document.getElementById('officerRoleOverlay').classList.add('show');
+}
+function closeOfficerRoleModal() { document.getElementById('officerRoleOverlay').classList.remove('show'); }
