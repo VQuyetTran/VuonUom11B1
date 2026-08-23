@@ -8,7 +8,7 @@ import {
     openOfficerRoleModal, closeOfficerRoleModal,
     openRuleModal, closeRuleModal,
     openRecord, closeRecord, openProfile, closeProfile,
-    toggleCustomWrap
+    toggleCustomWrap, setProfileRange
 } from './ui.js';
 import { todayISO } from './utils.js';
 import { deleteStudentFromDB } from './events.js';
@@ -536,4 +536,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Bắt đầu ở trang Khu vườn
     switchPage('garden');
+
+    // Gắn sự kiện cho 4 tab thời gian trong modal "Hồ sơ thi đua cá nhân"
+    // (Tuần / Tháng / Học kì / Toàn năm) — trước đây các nút này KHÔNG hề có
+    // sự kiện, nên bấm vào không đổi gì và số liệu không khớp với điểm thật.
+    document.querySelectorAll('.profile-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setProfileRange(btn.getAttribute('data-range'));
+        });
+    });
 });

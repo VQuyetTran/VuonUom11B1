@@ -452,6 +452,7 @@ export function renderAll() {
     renderLog();
     renderSummary();
     renderSettings();
+    renderProfileModal(); // đảm bảo nếu hồ sơ học sinh đang mở thì cũng được cập nhật ngay khi có điểm mới
     updateUIByRole();
     console.log('Render hoàn tất');
 }
@@ -486,42 +487,107 @@ export function toggleCustomWrap() {
     document.getElementById('recordCustomWrap').style.display = (r && r.teacherInput) ? 'flex' : 'none';
 }
 
+// --- Tính khoảng ngày cho modal hồ sơ theo tab đang chọn (Tuần/Tháng/Học kì/Toàn năm) ---
+// Trước đây modal LUÔN lọc log/điểm danh theo ">= week1Start" (mốc đầu năm học) cho MỌI
+// tab, nên 4 nút Tuần/Tháng/Học kì/Toàn năm không hề gắn sự kiện và bấm vào không đổi gì,
+// đồng thời số liệu hiển thị (+0/-0) không khớp với tổng điểm thật của học sinh.
+function profileRangeBounds(state, range) {
+    const wk = currentWeekNumber(state) || 1;
+    if (range === 'month') {
+        const now = new Date();
+        const from = new Date(now.getFullYear(), now.getMonth(), 1);
+        const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return { from: isoOf(from), to: isoOf(to) };
+    }
+    if (range === 'term') {
+        const hk1 = state.classInfo.hk1Weeks || 18;
+        const totalWeeks = state.classInfo.totalWeeks || 38;
+        if (wk <= hk1) {
+            return { from: isoOf(weekRange(state, 1).start), to: isoOf(weekRange(state, hk1).end) };
+        }
+        return { from: isoOf(weekRange(state, hk1 + 1).start), to: isoOf(weekRange(state, totalWeeks).end) };
+    }
+    if (range === 'year') {
+        const totalWeeks = state.classInfo.totalWeeks || 38;
+        return { from: isoOf(weekRange(state, 1).start), to: isoOf(weekRange(state, totalWeeks).end) };
+    }
+    // Mặc định: tuần hiện tại
+    const r = weekRange(state, Math.max(1, wk));
+    return { from: isoOf(r.start), to: isoOf(r.end) };
+}
+
 let profileStudentId = null;
-export function openProfile(sid) {
+let profileRange = 'week';
+
+// Vẽ lại nội dung modal hồ sơ dựa trên học sinh + khoảng thời gian đang chọn.
+// Hàm này được gọi lại mỗi khi: mở hồ sơ, chuyển tab thời gian, hoặc sau khi
+// giáo viên ghi nhận điểm (renderAll() sẽ gọi lại hàm này nếu modal đang mở),
+// nên số liệu luôn khớp với dữ liệu mới nhất.
+export function renderProfileModal() {
+    const overlay = document.getElementById('profileOverlay');
+    if (!overlay || !overlay.classList.contains('show')) return; // modal đang đóng thì khỏi vẽ
+    const sid = profileStudentId;
     const state = getState();
     const s = state.students.find(x => x.id === sid);
-    if (!s) return;
-    profileStudentId = sid;
+    if (!s) { closeProfile(); return; }
+
     const pts = studentTotalPoints(sid, state);
     const lvl = levelOf(pts);
     document.getElementById('profileName').textContent = s.name;
-    document.getElementById('profileGroup').textContent = 'Tổ '+s.group;
+    document.getElementById('profileGroup').textContent = 'Tổ ' + s.group;
     document.getElementById('profileLevel').textContent = lvl.emoji + ' ' + lvl.name;
-    const logs = state.logs.filter(l => l.studentId === sid && l.date >= state.classInfo.week1Start);
-    const plus = logs.filter(l => l.points > 0).reduce((a,b) => a+b.points, 0);
-    const minus = logs.filter(l => l.points < 0).reduce((a,b) => a+b.points, 0);
-    const attDates = Object.keys(state.attendance).filter(d => d >= state.classInfo.week1Start);
+
+    const { from, to } = profileRangeBounds(state, profileRange);
+    const logs = state.logs.filter(l => l.studentId === sid && l.date >= from && l.date <= to);
+    const plus = logs.filter(l => l.points > 0).reduce((a, b) => a + b.points, 0);
+    const minus = logs.filter(l => l.points < 0).reduce((a, b) => a + b.points, 0);
+    const attDates = Object.keys(state.attendance).filter(d => d >= from && d <= to);
     let present = 0;
     attDates.forEach(d => {
         const r = state.attendance[d][sid];
         if (r && r.morning === 'present' && r.afternoon === 'present') present++;
     });
+    // Xếp hạng luôn tính theo tổng điểm toàn thời gian (không phụ thuộc tab thời gian)
     const rank = rankedStudents(state).findIndex(x => x.id === sid) + 1;
     document.getElementById('pStatPlus').textContent = '+' + plus;
     document.getElementById('pStatMinus').textContent = minus;
     document.getElementById('pStatNet').textContent = plus + minus;
     document.getElementById('pStatAtt').textContent = present + '/' + attDates.length;
     document.getElementById('pStatRank').textContent = '#' + rank + '/' + state.students.length;
-    document.getElementById('profilePlusList').innerHTML = plus ? logs.filter(l => l.points > 0).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--primary-dark)">+${l.points}</b></div>`).join('') : '<div class="empty">Không có</div>';
-    document.getElementById('profileMinusList').innerHTML = minus ? logs.filter(l => l.points < 0).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--red)">${l.points}</b></div>`).join('') : '<div class="empty">Không có</div>';
+    document.getElementById('profilePlusList').innerHTML = plus ? logs.filter(l => l.points > 0).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--primary-dark)">+${l.points}</b></div>`).join('') : '<div class="empty">Không có điểm cộng trong thời gian này.</div>';
+    document.getElementById('profileMinusList').innerHTML = minus ? logs.filter(l => l.points < 0).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).map(l => `<div class="list-row"><span>${l.ruleText}</span><b style="color:var(--red)">${l.points}</b></div>`).join('') : '<div class="empty">Không có điểm trừ trong thời gian này.</div>';
     const attRows = attDates.sort().map(d => {
         const r = state.attendance[d][sid];
         const label = v => v === 'present' ? '✅ Có mặt' : v === 'late' ? '⏰ Đi trễ' : v === 'excused' ? '📝 Vắng CP' : v === 'absent' ? '❌ Vắng KP' : '—';
         return `<tr><td>${fmtDate(d)}</td><td>${label(r ? r.morning : '')}</td><td>${label(r ? r.afternoon : '')}</td></tr>`;
     }).join('');
     document.getElementById('profileAttTable').innerHTML = attRows || '<tr><td colspan="3" class="empty">Chưa có dữ liệu</td></tr>';
-    document.getElementById('profileOverlay').classList.add('show');
 }
+
+export function openProfile(sid) {
+    const state = getState();
+    const s = state.students.find(x => x.id === sid);
+    if (!s) return;
+    profileStudentId = sid;
+    profileRange = 'week';
+    // Reset UI tab về "Tuần" mỗi lần mở hồ sơ mới
+    document.querySelectorAll('.profile-tab').forEach(btn => {
+        btn.classList.toggle('on', btn.getAttribute('data-range') === 'week');
+    });
+    document.getElementById('profileOverlay').classList.add('show');
+    renderProfileModal();
+}
+
+// Chuyển tab thời gian trong modal hồ sơ (Tuần/Tháng/Học kì/Toàn năm) — trước đây
+// các nút này KHÔNG có sự kiện nào cả nên bấm vào không có tác dụng gì.
+export function setProfileRange(range) {
+    profileRange = range;
+    document.querySelectorAll('.profile-tab').forEach(btn => {
+        btn.classList.toggle('on', btn.getAttribute('data-range') === range);
+    });
+    renderProfileModal();
+}
+
 export function closeProfile() { document.getElementById('profileOverlay').classList.remove('show'); }
 
 let editingRuleId = null;
