@@ -427,10 +427,14 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/events.js"></script>
-<script src="js/main.js"></script>
+<!-- Thay các thẻ script cũ bằng module -->
+<script type="importmap">
+{
+    "imports": {
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    }
+}
+</script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

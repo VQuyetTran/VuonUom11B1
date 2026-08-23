@@ -1,78 +1,82 @@
-// events.js
-// Gán các hàm handler cần thiết vào window để inline onclick hoạt động
-window.changeGroup = function(id, val) {
-  const s = state.students.find(x => x.id === id);
-  if (s) { s.group = parseInt(val); queueSave(); renderAll(); }
-};
+import { 
+    addLog, addStudent, removeStudent, updateStudentGroup,
+    addRule, updateRule, deleteRule,
+    updateOfficer, addOfficerRole, deleteOfficerRole,
+    updateAttendance, clearAllLogs, updateClassInfo,
+    getState 
+} from './data.js';
+import { isTeacher, setIsTeacher, renderAll, toast } from './ui.js';
+import { todayISO } from './utils.js';
 
-window.setOfficer = function(id, sid) {
-  const o = state.officers.find(x => x.id === id);
-  if (o) { o.studentId = sid; queueSave(); }
-};
-
-window.setAtt = function(dateStr, sid, period, val) {
-  if (!state.attendance[dateStr]) state.attendance[dateStr] = {};
-  if (!state.attendance[dateStr][sid]) state.attendance[dateStr][sid] = { morning: '', afternoon: '' };
-  state.attendance[dateStr][sid][period] = val;
-  queueSave();
-  renderAttendance();
-};
-
-window.setAttNote = function(dateStr, sid, field, val) {
-  if (!state.attendance[dateStr]) state.attendance[dateStr] = {};
-  if (!state.attendance[dateStr][sid]) state.attendance[dateStr][sid] = { morning: '', afternoon: '' };
-  state.attendance[dateStr][sid][field] = val;
-  queueSave();
-};
-
-window.removeStudent = function(id) {
-  state.students = state.students.filter(s => s.id !== id);
-  state.logs = state.logs.filter(l => l.studentId !== id);
-  queueSave();
-  renderAll();
-  toast('Đã xóa học sinh.');
-};
-
-window.removeOfficerRole = function(id) {
-  if (!confirm('Xoá chức vụ này?')) return;
-  state.officers = state.officers.filter(o => o.id !== id);
-  queueSave();
-  renderAll();
-};
-
-window.deleteRule = function(id) {
-  if (!confirm('Xoá quy định này?')) return;
-  state.rules = state.rules.filter(r => r.id !== id);
-  queueSave();
-  renderAll();
-  toast('Đã xoá quy định.');
-};
-
-window.shuffleGroups = function() {
-  const n = state.classInfo.numGroups || 4;
-  const shuffled = [...state.students].sort(() => Math.random() - 0.5);
-  shuffled.forEach((s, i) => s.group = (i % n) + 1);
-  queueSave();
-  renderAll();
-  toast('Đã xếp tổ ngẫu nhiên.');
-};
-
-window.login = function(password) {
-  if (password === state.classInfo.password) {
-    isTeacher = true;
-    toast('✅ Đăng nhập thành công với quyền giáo viên.');
-    updateUIByRole();
+// Gán các handler vào window
+window.changeGroup = async function(id, val) {
+    await updateStudentGroup(id, parseInt(val));
     renderAll();
-    return true;
-  } else {
-    toast('❌ Mật khẩu không đúng.');
-    return false;
-  }
+};
+
+window.setOfficer = async function(id, sid) {
+    await updateOfficer(id, sid);
+    renderAll();
+};
+
+window.setAtt = async function(dateStr, sid, period, val) {
+    await updateAttendance(dateStr, sid, period, val);
+    renderAll();
+};
+
+window.setAttNote = async function(dateStr, sid, field, val) {
+    await updateAttendance(dateStr, sid, field, val);
+    renderAll();
+};
+
+window.removeStudent = async function(id) {
+    if (!confirm('Xóa học sinh này?')) return;
+    await removeStudent(id);
+    renderAll();
+    toast('Đã xóa học sinh.');
+};
+
+window.removeOfficerRole = async function(id) {
+    if (!confirm('Xoá chức vụ này?')) return;
+    await deleteOfficerRole(id);
+    renderAll();
+};
+
+window.deleteRule = async function(id) {
+    if (!confirm('Xoá quy định này?')) return;
+    await deleteRule(id);
+    renderAll();
+    toast('Đã xoá quy định.');
+};
+
+window.shuffleGroups = async function() {
+    const state = getState();
+    const n = state.classInfo.numGroups || 4;
+    const shuffled = [...state.students].sort(() => Math.random() - 0.5);
+    for (const s of shuffled) {
+        const newGroup = (shuffled.indexOf(s) % n) + 1;
+        await updateStudentGroup(s.id, newGroup);
+    }
+    renderAll();
+    toast('Đã xếp tổ ngẫu nhiên.');
+};
+
+window.login = async function(password) {
+    const state = getState();
+    // Tạm thời so sánh plain text (không an toàn)
+    if (password === state.classInfo.password) {
+        setIsTeacher(true);
+        toast('✅ Đăng nhập thành công.');
+        renderAll();
+        return true;
+    } else {
+        toast('❌ Mật khẩu không đúng.');
+        return false;
+    }
 };
 
 window.logout = function() {
-  isTeacher = false;
-  toast('Đã đăng xuất.');
-  updateUIByRole();
-  renderAll();
+    setIsTeacher(false);
+    toast('Đã đăng xuất.');
+    renderAll();
 };
