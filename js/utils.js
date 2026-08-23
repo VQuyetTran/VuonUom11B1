@@ -1,4 +1,4 @@
-// Các hàm tiện ích
+// utils.js
 export function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
 export function fmtDate(iso) {
@@ -38,7 +38,6 @@ export function levelOf(pts) {
     return { name: 'Hạt giống', emoji: '🌱', next: 40 };
 }
 
-// Các hàm liên quan đến tuần
 export function currentWeekNumber(state) {
     const start = dateFromISO(state.classInfo.week1Start);
     const step = (new Date(state.classInfo.week2Start) - new Date(state.classInfo.week1Start)) / 86400000 || 7;

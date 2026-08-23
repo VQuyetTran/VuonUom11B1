@@ -1,5 +1,5 @@
 // ============================================================
-// ui.js – Render giao diện và modal
+// ui.js – Render giao diện hoàn chỉnh
 // ============================================================
 
 import { getState } from './data.js';
@@ -434,8 +434,12 @@ export function renderSettings() {
 
 // Render tổng hợp
 export function renderAll() {
+    console.log('Render all...');
     const state = getState();
-    if (!state) return;
+    if (!state) {
+        console.warn('State chưa có dữ liệu!');
+        return;
+    }
     renderHeader();
     renderSideSummary();
     renderGardenStats();
@@ -449,22 +453,29 @@ export function renderAll() {
     renderSummary();
     renderSettings();
     updateUIByRole();
+    console.log('Render hoàn tất');
 }
 
 // --- Modal functions ---
-
 let recordStudentId = null;
 export function openRecord(sid) {
     if (!isTeacher) { toast('⚠️ Vui lòng đăng nhập với quyền giáo viên.'); return; }
-    recordStudentId = sid;
+    // sid được gọi từ onclick="window.openRecord('${s.id}')" nên LUÔN là chuỗi (string),
+    // trong khi id học sinh lấy từ Supabase là số (number). So sánh "===" trước đây luôn
+    // sai kiểu dữ liệu -> không tìm thấy học sinh -> lỗi ngầm -> modal không hiện ra được.
+    // Ép kiểu về số để so sánh chính xác.
+    const id = typeof sid === 'string' ? parseInt(sid, 10) : sid;
     const state = getState();
-    const s = state.students.find(x => x.id === sid);
+    const s = state.students.find(x => x.id === id);
+    if (!s) { toast('⚠️ Không tìm thấy học sinh!'); return; }
+    recordStudentId = id;
     document.getElementById('recordName').textContent = s.name;
     const sel = document.getElementById('recordRuleSelect');
     sel.innerHTML = state.rules.map(r => `<option value="${r.id}">${r.text} (${r.teacherInput ? 'GV tự nhập' : (r.points > 0 ? '+' : '') + r.points})</option>`).join('');
     toggleCustomWrap();
+    document.getElementById('recordCustomPoints').value = 1;
     document.getElementById('recordOverlay').classList.add('show');
-    window.recordStudentId = sid;
+    window.recordStudentId = id;
 }
 export function closeRecord() { document.getElementById('recordOverlay').classList.remove('show'); }
 
@@ -546,5 +557,5 @@ export function openOfficerRoleModal() {
 }
 export function closeOfficerRoleModal() { document.getElementById('officerRoleOverlay').classList.remove('show'); }
 
-// Xuất các biến để main.js có thể tham chiếu
+// Xuất biến để main.js có thể tham chiếu
 export { recordStudentId, editingRuleId };
